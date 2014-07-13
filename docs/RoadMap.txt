@@ -1,0 +1,155 @@
+﻿----------------------------------------------------------------------------------------------------
+	 v 1.0 Completion Requirements:
+----------------------------------------------------------------------------------------------------
+
+OK - feature parity with 0.1 rc1
+OK - store the game data into a single file
+OK - game file format must be version numbered (each version will be a .h file)
+OK - save format must be numbered (in the filename, not needed to be on file itself)
+OK - configuration must be saved/loaded from file
+OK - intensive testing and QA
+
+
+SEQUENCE - Ape, Dynamite, Mage, Seahorse, Daisie, Techno, Mummy, Spike (Daisie, Seahorse, Ape x2, Spike)
+
+
+--------------------------
+VERSION 1.0.1
+-------------------------
+- PS2: add ISO/CD version
+
+
+
+
+--------------------------
+VERSION 1.0.2
+--------------------------
+- colorcycle out of sync sometimes
+- get some free sound effects to replace Capcom ones
+
+
+- projectile _target_position must take target width/heigth in account
+
+- chain is bigger when facing direction right
+- fix charging while passing through doors (keep charge)
+
+- remove build warnings in PS2, PSP and Dingux
+- EDITOR: clean editor code (find slots that aren't used anymore)
+LOW - fix PSP build to use qmake
+LOW - HP bars must not be drawn under 3rd level of tiles
+- move all drawing methods such as hp-bar, icons, path, etc to draw class; so graphlib only deals with SDL making easier to change it to other graphical library
+OPTIMIZATION:
+	- OPTIMIZATION: use coverity
+	- OPTIMIZATION: use cppcheck (plugin for qtcreator: http://qt-project.org/forums/viewthread/26113)
+	- Optimize editor: in editor_area, do not alloc pixmaps every time, only when changing beaten flag or stage
+	- check for ALL places in game that can use game_data directly instead of creating new instances
+		- refactor code, so that "game_npcs" do not replicate(copy) data from game_data
+		- refactor code, so npcs and players do not replicate(copy) CONST data from game_data, only DYNAMIC such as position, state and HP
+	- use optimization tricks for SDL (http://osdl.sourceforge.net/main/documentation/rendering/SDL-optimizing.html)
+
+--------------------------
+VERSION 1.1
+--------------------------
+
+- metool shooting only when attack animation ends
+	- FILESYSTEM: must have a flag that indicates witch of the attack frames will start projectile
+
+
+- allow to show player even if stage/map are NULL
+- sub-boss (teleports in, can't leave room if its alive)
+- different icons for items depending on player (change colors, etc)
+- upgrade armor parts like Megaman-X
+	- beta: (double-jump, spike-immunity, double-charge)
+	- rock: (airdash, half-damage, hiper-buster)
+
+MEDIUM - add "flashing" effect to be used when shooting dynamite's weapon (similar to mm2 flashman's)
+- AI:
+	- when walk is blocked, check if hit a full-wall before jumping
+- AI ACTIONS:
+	- add 4 types of jump in AI - short, medium, long, moonwalk
+	- add jump-up (and jump-down together) to AI (parameter for jump up is gravity level)
+
+- all Megaman 1 features:
+    - option for automatic respawn after "x" seconds
+    - platform becomes intangible after X pixels, for TILESIZE pixels
+    - slippery ice terrain
+
+- implement bolts and shop (https://www.facebook.com/photo.php?fbid=432642990156602&set=a.114335308654040.27951.114325318655039&type=1&relevant_count=1&ref=nf)
+- verify possibility of a Dreamcast port: (http://dcemulation.org/?title=CodeBlocks_DC_Dev)
+    - load in memory only graphics used in the stage or spawn-npc for NPC and objects
+    - load in memory only the tiles used in the stage, not the whole tileset (use C++ std::map)
+- MacOSX port (?)
+- implement different frames size in game
+- load tileset image in memory only when drawing the map, then release it. for 3rd level, create a std::map<x, y> of tiles containing only the needed ones
+
+--------------------------
+VERSION 1.2
+--------------------------
+- all Megaman 2 features:
+    - 1/ballom item (slowly up)
+    - weapon that explodes releasing several NPCs (of same type)
+    - dark room that is iluminated if a fire-NPC is on visible_screen (heat)
+    - napalm projectile (heat)
+
+- all Megaman 3 features:
+    - guided projectile (hard)
+    - AI: grab/release player (magnet)
+    - magnet projectile - fist follow horizontal, then vertical (magnet)
+    - NPC that darkens screen if visible (shadow)
+    - laser projectile (gemini)
+    - killing an NPC can activate/deactivate a list of objects (big-snake)
+
+- AI ACTIONS:
+    - drop shell/shield (will loose protection)
+
+
+--------------------------
+VERSION 1.3
+--------------------------
+- all Megaman 4 features:
+    - stage with auto-scrolling
+	- background-image with auto-scrolling
+
+- all Megaman 5 features:
+    -
+
+- all Megaman 6 features:
+    -
+
+
+
+
+
+
+----------------------------------------------------------------------------------------------------
+	 Changelog:
+----------------------------------------------------------------------------------------------------
+- PS2: can't get to press start on intro screen (something is "eating" the time for joystick)
+- PS2: progressive text is too fast
+- sometimes, when entering stairs, player is out of position (x axis)
+- allow half (0.5, 1.5, 2.5...) in movement speed. Use a flag to move one extra pixel every impar time.
+- golden fish leaving water (fly must not change between unblock <-> water)
+- disable down+jump for sliding in android
+- re-add slide button in android
+- show error (instead of closing app) if can't save game
+- NPCs must not drop lifes, place lifes in maps
+- update tileset-beaten
+- PS2 save icon: http://sksapps.com/index.php?page=Creating_Icons_tutorial.html
+- input.clean must read/clean all SDL events that are queued
+- set video to use hardware surfaces on dingux (increases speed)
+- rework Mummy Bot's stage graphics
+- improve tanks icon
+- unified 1UP icon for rock and beta
+- increase intro dialog times
+- increase "you got" screen duration time
+- check why player movement is so slow or if FPS shown is real
+CRITICAL: segfault when seahorse tries to move into spikes
+CRITICAL: save not working
+CRITICAL: spawn NPC is crashing
+- change name Fouad Moes -> FouadtjuhMaster
+- even if for just a instant, get-items are blocking player (can block jump)
+- move object graphics_list to draw
+- preload all dropable object graphics
+- NPCs must not walk throught wall-lock terrain
+- PS2: write save and config to memory card
+- remove NPCs near savepoints (apebot)

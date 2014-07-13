@@ -1,0 +1,31 @@
+TARGET = rockbot
+OBJS   = main.o options/key_map.o inputlib.o timerlib.o soundlib.o file/file_io.o colision_detection.o graphicslib.o class_colorcycle.o sceneslib.o graphic/option_picker.o classmap.o objects/object.o character/character.o projectilelib.o graphic/animation.o stage.o stage_select.o class_config.o scenes/dialogs.o scenes/ending.o game.o character/classplayer.o character/classnpc.o character/artificial_inteligence.o character/classboss.o aux_tools/trajectory_parabola.o file/convert.o graphic/draw.o
+ 
+all: rm-elf $(TARGET).elf
+
+INCLUDES = -I$(KOS_BASE)/../kosports/include/SDL1213 -I.
+
+CFLAGS += -O3 -fno-function-cse -funit-at-a-time -fno-delete-null-pointer-checks -funroll-loops -fomit-frame-pointer -fno-ident  -finline-functions -freorder-blocks -funsigned-char -funroll-all-loops -frerun-loop-opt -falign-loops -fstrict-aliasing -ml -m4-single-only
+CFLAGS += -DDREAMCAST $(INCLUDES) -DDREAMCAST 
+
+include $(KOS_BASE)/Makefile.rules
+
+clean:
+	-rm -f $(TARGET).elf $(TARGET).bin $(OBJS)
+
+rm-elf:
+	-rm -f $(TARGET).elf
+
+$(TARGET).elf: $(OBJS) 
+	$(KOS_CC) $(CFLAGS) $(KOS_LDFLAGS) -o $(TARGET).elf $(KOS_START) \
+		$(OBJS) $(PROBJS) $(OBJEXTRA) -L$(KOS_BASE)/lib -lgcc -lSDL_image_1212 -lFAKE_mixer -lpng_128 -lSDL_ttf -lfreetype -lz_123 -lSDL_1213 -lmikmod_320b2 -lm -lk++ -lstdc++ $(KOS_LIBS)
+
+run: $(TARGET)
+	$(KOS_LOADER) $(TARGET)
+
+dist:
+	rm -f $(OBJS)
+	$(KOS_STRIP) $(TARGET)
+	
+bin:
+	$(KOS_OBJCOPY) -O binary -R .stack $(TARGET).elf $(TARGET).bin

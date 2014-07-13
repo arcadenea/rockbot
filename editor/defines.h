@@ -1,0 +1,17 @@
+#ifndef DEFINES_H
+#define DEFINES_H
+
+#define EDITMODE_NORMAL 0
+#define EDITMODE_LOCK 1
+#define EDITMODE_ERASER 2
+#define EDITMODE_FILL 3
+#define EDITMODE_LINK 4
+#define EDITMODE_LINK_DEST 5
+#define EDITMODE_NPC 6
+#define EDITMODE_ADDNPC 7
+#define EDITMODE_STAIRS 8
+#define EDITMODE_OBJECT 9
+
+
+
+#endif // DEFINES_H

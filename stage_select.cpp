@@ -53,11 +53,13 @@ void stage_select::load_graphics() {
 	filename = FILEPATH + "data/images/backgrounds/stage_select_darkned.png";
 	graphLib.surfaceFromFile(filename, &s_dark);
 
-    if (game_save.selected_player == 1) {
-		filename = FILEPATH + "data/images/faces/rockbot_eyes.png";
-	} else {
-		filename = FILEPATH + "data/images/faces/betabot_eyes.png";
-	}
+    if (game_save.selected_player == PLAYER_BETABOT) {
+        filename = FILEPATH + "data/images/faces/betabot_eyes.png";
+    } else if (game_save.selected_player == PLAYER_ROCKBOT) {
+        filename = FILEPATH + "data/images/faces/rockbot_eyes.png";
+    } else {
+        filename = FILEPATH + "data/images/faces/big_eyes.png";
+    }
 
 	graphLib.surfaceFromFile(filename, &eyes_surface);
 
@@ -87,7 +89,7 @@ void stage_select::place_face(std::string face_file, std::string botname, st_pos
 	// TODO - calculate the text position according to it's strlen
 	int txtPosX, txtPosY;
 
-    //std::cout << "stage_select::place_face - face_file: " << face_file << std::endl;
+    //std::cout << "stage_select::place_face - face_file: '" << face_file << "'" << std::endl;
 
 	if (face_file.size() > 0) {
         graphLib.place_face(face_file, st_position(pos.x*80+63, pos.y*68+28));
@@ -127,24 +129,30 @@ void stage_select::draw_eyes(int x, int y, bool erase_eyes) {
 		posY = 19;
 	}
 	/*
-	if (game_config.selected_player == 2) {
+    if (game_config.selected_player == PLAYER_BETABOT) {
 		posY -= 3;
 	}
 	*/
     posX = posX+80+63;
     posY = posY+64+32;
 	if (erase_eyes) {
-        if (game_save.selected_player == 1) {
+        if (game_save.selected_player == PLAYER_ROCKBOT) {
 			place_face("rockbot_no_eyes.png", "", st_position(1, 1));
-		} else {
+        } else if (game_save.selected_player == PLAYER_BETABOT) {
 			place_face("betabot_no_eyes.png", "", st_position(1, 1));
-		}
+        } else if (game_save.selected_player == PLAYER_CANDYBOT) {
+            place_face("player3.png", "", st_position(1, 1));
+        } else {
+            place_face("player4.png", "", st_position(1, 1));
+        }
 	} else {
-        if (game_save.selected_player == 1) {
+        if (game_save.selected_player == PLAYER_ROCKBOT) {
 			graphLib.copyArea(st_position(posX, posY), &eyes_surface, &graphLib.gameScreen);
-		} else {
+        } else if (game_save.selected_player == PLAYER_BETABOT) {
 			graphLib.copyArea(st_position(posX, posY-2), &eyes_surface, &graphLib.gameScreen);
-		}
+        } else {
+            graphLib.copyArea(st_position(posX-1, posY), &eyes_surface, &graphLib.gameScreen);
+        }
 	}
 }
 
@@ -218,11 +226,15 @@ struct st_position stage_select::select() {
 	}
 
     if (finished_stages() < 9) {
-        if (game_save.selected_player == 1) {
+        if (game_save.selected_player == PLAYER_ROCKBOT) {
 			place_face("rockbot_no_eyes.png", "", st_position(1, 1));
-		} else {
+        } else if (game_save.selected_player == PLAYER_BETABOT) {
 			place_face("betabot_no_eyes.png", "", st_position(1, 1));
-		}
+        } else if (game_save.selected_player == PLAYER_CANDYBOT) {
+            place_face("player3.png", "", st_position(1, 1));
+        } else {
+            place_face("player4.png", "", st_position(1, 1));
+        }
 	} else {
 		place_face("dr_destrin.png", "Dr. D.", st_position(1, 1));
 	}

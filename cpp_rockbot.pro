@@ -10,14 +10,18 @@ QT       -= core
 QT       -= gui
 
 
+#CONFIG += android
 CONFIG += linux
+#CONFIG += macosx
 #CONFIG += win32
 #CONFIG += ps2
 #CONFIG += dingux
 #CONFIG += open_pandora
-#CONFIG += android
 #CONFIG += wii
 #CONFIG += dreamcast
+
+
+# NOTE for android build on 64: /usr/share/qt4/mkspecs/default/qmake.conf
 
 CONFIG += console
 CONFIG -= app_bundle
@@ -25,92 +29,105 @@ CONFIG -= app_bundle
 TARGET = rockbot
 
 linux {
-	LIBS = -L/usr/X11R6/lib -lX11 -lSDL_mixer -lSDL_image -lSDL_ttf `sdl-config --libs`
+        LIBS = -L/usr/X11R6/lib -lX11 -lSDL_mixer -lSDL_image -lSDL_ttf `sdl-config --libs`
 
-	INCLUDES = -I/usr/include/SDL \
-		-I/usr/include \
-		-I. \
-		-I./include \
-		-L/usr/lib
-	QMAKE_CCFLAGS += -DLINUX -DPC -Wno-reorder -O3 -Wno-ignored-qualifiers
-	QMAKE_CXXFLAGS += -DLINUX -DPC -Wno-reorder -O3 -Wno-ignored-qualifiers
+        INCLUDES = -I/usr/include/SDL \
+                -I/usr/include \
+                -I. \
+                -I./include \
+                -L/usr/lib
+        QMAKE_CCFLAGS += -DLINUX -DPC -Wno-reorder -Wno-ignored-qualifiers
+        QMAKE_CXXFLAGS += -DLINUX -DPC -Wno-reorder -Wno-ignored-qualifiers
 
 }
 
+macosx {
+        LIBS = -framework Cocoa -L/Library/Frameworks -F/Library/Frameworks -framework SDL -framework SDL_mixer -framework SDL_image -framework SDL_ttf
+        QMAKE_CXXFLAGS += -DOSX -DPC -Wno-reorder -O3 -I/Library/Frameworks/SDL.framework/Headers -I/Library/Frameworks/SDL_image.framework/Headers -I/Library/Frameworks/SDL_mixer.framework/Headers -I/Library/Frameworks/SDL_ttf.framework/Headers
+        OBJECTIVE_HEADERS += ports/osx/SDLMain.h
+        OBJECTIVE_SOURCES += ports/osx/SDLMain.m
+        QMAKE_OBJECTIVE_CFLAGS += -I/Library/Frameworks/SDL.framework/Headers -I/Library/Frameworks/SDL_image.framework/Headers -I/Library/Frameworks/SDL_mixer.framework/Headers -I/Library/Frameworks/SDL_ttf.framework/Headers -F/Library/Frameworks
+}
+
 android {
-	TARGET = libapplication.so
+        ANDROIDSDK="/home/iuri/Programas/android-studio/sdk/"
+        ANDROIDNDK="/home/iuri/Programas/android-studio/sdk/android-ndk-r9d"
 
-	QMAKE_CXX = $(ANDROIDSDK)/arm-linux-androideabi-g++
-	QMAKE_LINK = $(ANDROIDSDK)/arm-linux-androideabi-g++
+        TARGET = libapplication.so
+
+        QMAKE_CXX = $${ANDROIDNDK}/toolchains/arm-linux-androideabi-4.6/prebuilt/linux-x86_64/bin/arm-linux-androideabi-g++
+        QMAKE_LINK = $${ANDROIDNDK}/toolchains/arm-linux-androideabi-4.6/prebuilt/linux-x86_64/bin/arm-linux-androideabi-g++
 
 
-	QMAKE_CXXFLAGS += -fpic -ffunction-sections -funwind-tables -fstack-protector \
+        QMAKE_CXXFLAGS += -fpic -ffunction-sections -funwind-tables -fstack-protector \
 	-DANDROID -DHANDHELD -D__ARM_ARCH_5__ -D__ARM_ARCH_5T__ -D__ARM_ARCH_5E__ \
 	-D__ARM_ARCH_5TE__ -no-canonical-prefixes -march=armv5te -mtune=xscale -msoft-float -mthumb -fomit-frame-pointer \
 	-fno-strict-aliasing -finline-limit=64 -DANDROID -DNDEBUG -O2 -g -finline-functions -Wa,--noexecstack \
 	-D_GNU_SOURCE=1 -D_REENTRANT -shared -Wl,-soname,libapplication.so \
-	--sysroot=/arquivos/development/SDK/Android/android-ndk-r8e/platforms/android-14/arch-arm \
-	-isystem/arquivos/development/SDK/Android/android-ndk-r8e/platforms/android-14/arch-arm/usr/include \
-	-isystem/arquivos/development/SDK/Android/android-ndk-r8e/sources/cxx-stl/gnu-libstdc++/4.6/include \
-	-isystem/arquivos/development/SDK/Android/android-ndk-r8e/sources/cxx-stl/gnu-libstdc++/4.6/libs/armeabi/include \
-	-isystem/arquivos/development/SDK/Android/commandergenius/project/jni/application/../sdl-1.2/include  \
-	-isystem/arquivos/development/SDK/Android/commandergenius/project/jni/application/../application/include \
-	-isystem/arquivos/development/SDK/Android/commandergenius/project/jni/application/../sdl-1.2/include \
-	-isystem/arquivos/development/SDK/Android/commandergenius/project/jni/application/../sdl_main/include \
-	-isystem/arquivos/development/SDK/Android/commandergenius/project/jni/application/../sdl_image/include \
-	-isystem/arquivos/development/SDK/Android/commandergenius/project/jni/application/../sdl_mixer/include \
-	-isystem/arquivos/development/SDK/Android/commandergenius/project/jni/application/../sdl_ttf/include \
-	-isystem/arquivos/development/SDK/Android/commandergenius/project/jni/application/../stlport/include \
-	-isystem/arquivos/development/SDK/Android/commandergenius/project/jni/application/../jpeg/include \
-	-isystem/arquivos/development/SDK/Android/commandergenius/project/jni/application/../png/include \
-	-isystem/arquivos/development/SDK/Android/commandergenius/project/jni/application/../ogg/include \
-	-isystem/arquivos/development/SDK/Android/commandergenius/project/jni/application/../flac/include \
-	-isystem/arquivos/development/SDK/Android/commandergenius/project/jni/application/../vorbis/include \
-	-isystem/arquivos/development/SDK/Android/commandergenius/project/jni/application/../freetype/include \
-	-isystem/arquivos/development/SDK/Android/commandergenius/project/jni/application/../jpeg/include \
-	-isystem/arquivos/development/SDK/Android/commandergenius/project/jni/application/../png/include \
-	-I/arquivos/development/SDK/Android/commandergenius/project/jni/application/../sdl-1.2/include
+        --sysroot=$${ANDROIDNDK}/platforms/android-14/arch-arm \
+        -isystem$${ANDROIDNDK}/platforms/android-14/arch-arm/usr/include \
+        -isystem$${ANDROIDNDK}/sources/cxx-stl/gnu-libstdc++/4.6/include \
+        -isystem$${ANDROIDNDK}/sources/cxx-stl/gnu-libstdc++/4.6/libs/armeabi/include \
+        -isystem$${ANDROIDSDK}/rockbot_build/commandergenius/project/jni/sdl-1.2/include  \
+        -isystem$${ANDROIDSDK}/rockbot_build/commandergenius/project/jni/application/include \
+        -isystem$${ANDROIDSDK}/rockbot_build/commandergenius/project/jni/sdl-1.2/include \
+        -isystem$${ANDROIDSDK}/rockbot_build/commandergenius/project/jni/sdl_main/include \
+        -isystem$${ANDROIDSDK}/rockbot_build/commandergenius/project/jni/sdl_image/include \
+        -isystem$${ANDROIDSDK}/rockbot_build/commandergenius/project/jni/sdl_mixer/include \
+        -isystem$${ANDROIDSDK}/rockbot_build/commandergenius/project/jni/sdl_ttf/include \
+        -isystem$${ANDROIDSDK}/rockbot_build/commandergenius/project/jni/stlport/include \
+        -isystem$${ANDROIDSDK}/rockbot_build/commandergenius/project/jni/jpeg/include \
+        -isystem$${ANDROIDSDK}/rockbot_build/commandergenius/project/jni/png/include \
+        -isystem$${ANDROIDSDK}/rockbot_build/commandergenius/project/jni/ogg/include \
+        -isystem$${ANDROIDSDK}/rockbot_build/commandergenius/project/jni/flac/include \
+        -isystem$${ANDROIDSDK}/rockbot_build/commandergenius/project/jni/vorbis/include \
+        -isystem$${ANDROIDSDK}/rockbot_build/commandergenius/project/jni/freetype/include \
+        -isystem$${ANDROIDSDK}/rockbot_build/commandergenius/project/jni/jpeg/include \
+        -isystem$${ANDROIDSDK}/rockbot_build/commandergenius/project/jni/png/include \
+        -I$${ANDROIDSDK}/rockbot_build/commandergenius/project/jni/sdl-1.2/include
 
-	LIBS = 	-fpic -ffunction-sections -funwind-tables -fstack-protector \
+        LIBS = 	-fpic -ffunction-sections -funwind-tables -fstack-protector \
 	-D__ARM_ARCH_5__ -D__ARM_ARCH_5T__ -D__ARM_ARCH_5E__ \
 	-D__ARM_ARCH_5TE__ -no-canonical-prefixes -march=armv5te -mtune=xscale -msoft-float -mthumb -fomit-frame-pointer \
 	-fno-strict-aliasing -finline-limit=64 -DANDROID -DNDEBUG -O2 -g -finline-functions -Wa,--noexecstack \
 	-D_GNU_SOURCE=1 -D_REENTRANT -shared -Wl,-soname,libapplication.so \
-	--sysroot=/arquivos/development/SDK/Android/android-ndk-r8e/platforms/android-14/arch-arm \
-	-isystem/arquivos/development/SDK/Android/android-ndk-r8e/platforms/android-14/arch-arm/usr/include \
-	-isystem/arquivos/development/SDK/Android/android-ndk-r8e/sources/cxx-stl/gnu-libstdc++/4.6/include \
-	-isystem/arquivos/development/SDK/Android/android-ndk-r8e/sources/cxx-stl/gnu-libstdc++/4.6/libs/armeabi/include \
-	-isystem/arquivos/development/SDK/Android/commandergenius/project/jni/application/../sdl-1.2/include  \
-	-isystem/arquivos/development/SDK/Android/commandergenius/project/jni/application/../application/include \
-	-isystem/arquivos/development/SDK/Android/commandergenius/project/jni/application/../sdl-1.2/include \
-	-isystem/arquivos/development/SDK/Android/commandergenius/project/jni/application/../sdl_main/include \
-	-isystem/arquivos/development/SDK/Android/commandergenius/project/jni/application/../sdl_image/include \
-	-isystem/arquivos/development/SDK/Android/commandergenius/project/jni/application/../sdl_mixer/include \
-	-isystem/arquivos/development/SDK/Android/commandergenius/project/jni/application/../sdl_ttf/include \
-	-isystem/arquivos/development/SDK/Android/commandergenius/project/jni/application/../stlport/include \
-	-isystem/arquivos/development/SDK/Android/commandergenius/project/jni/application/../jpeg/include \
-	-isystem/arquivos/development/SDK/Android/commandergenius/project/jni/application/../png/include \
-	-isystem/arquivos/development/SDK/Android/commandergenius/project/jni/application/../ogg/include \
-	-isystem/arquivos/development/SDK/Android/commandergenius/project/jni/application/../flac/include \
-	-isystem/arquivos/development/SDK/Android/commandergenius/project/jni/application/../vorbis/include \
-	-isystem/arquivos/development/SDK/Android/commandergenius/project/jni/application/../freetype/include \
-	-isystem/arquivos/development/SDK/Android/commandergenius/project/jni/application/../jpeg/include \
-	-isystem/arquivos/development/SDK/Android/commandergenius/project/jni/application/../png/include \
-	-I/arquivos/development/SDK/Android/commandergenius/project/jni/application/../sdl-1.2/include \
-	--sysroot=/arquivos/development/SDK/Android/android-ndk-r8e/platforms/android-14/arch-arm \
-	-L/arquivos/development/SDK/Android/commandergenius/project/jni/application/../../obj/local/armeabi \
-	/arquivos/development/SDK/Android/commandergenius/project/jni/application/../../obj/local/armeabi/libsdl-1.2.so \
-	/arquivos/development/SDK/Android/commandergenius/project/jni/application/../../obj/local/armeabi/libsdl_image.so \
-	/arquivos/development/SDK/Android/commandergenius/project/jni/application/../../obj/local/armeabi/libsdl_mixer.so \
-	/arquivos/development/SDK/Android/commandergenius/project/jni/application/../../obj/local/armeabi/libsdl_ttf.so \
-	-L/arquivos/development/SDK/Android/android-ndk-r8e/platforms/android-14/arch-arm/usr/lib \
+        --sysroot=$${ANDROIDNDK}/platforms/android-14/arch-arm \
+        -isystem$${ANDROIDNDK}/platforms/android-14/arch-arm/usr/lib \
+        -isystem$${ANDROIDNDK}/sources/cxx-stl/gnu-libstdc++/4.6/l \
+        -isystem$${ANDROIDNDK}/sources/cxx-stl/gnu-libstdc++/4.6/libs/armeabi/include \
+        -isystem$${ANDROIDSDK}/rockbot_build/commandergenius/project/jni/sdl-1.2/include  \
+        -isystem$${ANDROIDSDK}/rockbot_build/commandergenius/project/jni/application/include \
+        -isystem$${ANDROIDSDK}/rockbot_build/commandergenius/project/jni/sdl-1.2/include \
+        -isystem$${ANDROIDSDK}/rockbot_build/commandergenius/project/jni/sdl_main/include \
+        -isystem$${ANDROIDSDK}/rockbot_build/commandergenius/project/jni/sdl_image/include \
+        -isystem$${ANDROIDSDK}/rockbot_build/commandergenius/project/jni/sdl_mixer/include \
+        -isystem$${ANDROIDSDK}/rockbot_build/commandergenius/project/jni/sdl_ttf/include \
+        -isystem$${ANDROIDSDK}/rockbot_build/commandergenius/project/jni/stlport/include \
+        -isystem$${ANDROIDSDK}/rockbot_build/commandergenius/project/jni/jpeg/include \
+        -isystem$${ANDROIDSDK}/rockbot_build/commandergenius/project/jni/png/include \
+        -isystem$${ANDROIDSDK}/rockbot_build/commandergenius/project/jni/ogg/include \
+        -isystem$${ANDROIDSDK}/rockbot_build/commandergenius/project/jni/flac/include \
+        -isystem$${ANDROIDSDK}/rockbot_build/commandergenius/project/jni/vorbis/include \
+        -isystem$${ANDROIDSDK}/rockbot_build/commandergenius/project/jni/freetype/include \
+        -isystem$${ANDROIDSDK}/rockbot_build/commandergenius/project/jni/jpeg/include \
+        -isystem$${ANDROIDSDK}/rockbot_build/commandergenius/project/jni/png/include \
+        -I$${ANDROIDSDK}/rockbot_build/commandergenius/project/jni/sdl-1.2/include \
+        --sysroot=$${ANDROIDNDK}/platforms/android-14/arch-arm \
+        -L$${ANDROIDNDK}/platforms/android-14/arch-arm/usr/lib/ \
+        -L$${ANDROIDNDK}/sources/cxx-stl/gnu-libstdc++/4.8/libs/armeabi \
+        -L$${ANDROIDSDK}/rockbot_build/commandergenius/project/jni/../obj/local/armeabi \
+        $${ANDROIDSDK}/rockbot_build/commandergenius/project/jni/../obj/local/armeabi/libsdl-1.2.so \
+        $${ANDROIDSDK}/rockbot_build/commandergenius/project/jni/../obj/local/armeabi/libsdl_image.so \
+        $${ANDROIDSDK}/rockbot_build/commandergenius/project/jni/../obj/local/armeabi/libsdl_mixer.so \
+        $${ANDROIDSDK}/rockbot_build/commandergenius/project/jni/../obj/local/armeabi/libsdl_ttf.so \
+        -L$${ANDROIDSDK}/rockbot_build/android-ndk-r8e/platforms/android-14/arch-arm/usr/lib \
 	-lc -lm -lGLESv1_CM -ldl -llog -lz \
 	-L/usr/lib \
-	-L/arquivos/development/SDK/Android/android-ndk-r8e/sources/cxx-stl/gnu-libstdc++/4.6/libs/armeabi \
+        -L$${ANDROIDSDK}/rockbot_build/android-ndk-r8e/sources/cxx-stl/gnu-libstdc++/4.6/libs/armeabi \
 	-lgnustl_static -no-canonical-prefixes -Wl,--no-undefined -Wl,-z,noexecstack -Wl,-z,relro -Wl,-z,now \
-	-lsupc++  -lsdl-1.2
+        -lsupc++  -lsdl-1.2
 
-	QMAKE_POST_LINK += $(ANDROIDSDK)/arm-linux-androideabi-strip --strip-all libapplication.so
+        QMAKE_POST_LINK += $${ANDROIDNDK}/toolchains/arm-linux-androideabi-4.6/prebuilt/linux-x86_64/bin/arm-linux-androideabi-strip --strip-all libapplication.so
 
 }
 
@@ -119,7 +136,8 @@ win32 {
         LIBS =  -lSDL_mixer \
                 -lSDL_image \
                 -lSDL_ttf \
-                -lmingw32 -lSDL -mwindows
+                -lmingw32 -lSDL -mwindows \
+                -LC:\Qt\5.5\mingw492_32\lib
 
 
 		INCLUDES = -I/usr/include/SDL \
@@ -127,8 +145,9 @@ win32 {
                 -I. \
                 -I./include \
                 -L/usr/lib
-		QMAKE_CCFLAGS += -DWIN32 -DPC
-		QMAKE_CXXFLAGS += -DWIN32 -DPC
+                QMAKE_CCFLAGS += -DWIN32 -DPC
+                QMAKE_CXXFLAGS += -DWIN32 -DPC -IC:\Qt\5.5\mingw492_32\ -IC:\Qt\5.5\mingw492_32\include -LC:\Qt\5.5\mingw492_32\lib
+                #CONFIG -= console
 }
 
 
@@ -172,7 +191,11 @@ ps2 {
 	PRE_TARGETDEPS += usbhdfsd.s
 
 
-	SOURCES += ports/ps2/cdvd_rpc.c
+        QMAKE_CFLAGS -= -m64
+        QMAKE_CXXFLAGS -= -m64
+        QMAKE_LFLAGS -= -m64
+
+        SOURCES += ports/ps2/cdvd_rpc.c
 	QMAKE_CC = ee-gcc
 	QMAKE_CFLAGS += -G0 -Dwint_t=int -Dwint_t=int -DPLAYSTATION2=1 -DNUM=100 -DUSE_RWOPS -I../include -I./include -I$(PS2SDK)/ports/include/SDL -I$(PS2SDK)/ports/include -I../common -I $(PS2SDK)/ee/include -I $(PS2SDK)/common/include
 
@@ -182,7 +205,7 @@ ps2 {
 
 	INCLUDES = -D_EE -O2 -G0 -Wall -O6 -G0 -mno-check-zero-division -ffast-math -funroll-loops -fomit-frame-pointer -fstrict-aliasing -funsigned-char -fno-builtin-printf  -I. -Iunzip -DVAR_CYCLES -DCPU_SHUTDOWN -DSPC700_SHUTDOWN -DEXECUTE_SUPERFX_PER_LINE   -DSPC700_C  -DUNZIP_SUPPORT    -DSDD1_DECOMP  -DNO_INLINE_SET_GET -DNOASM -D_STLP_NO_NAMESPACES -D_NOTHREADS -D_STLP_NO_EXCEPTIONS -D_STLP_USE_NEWALLOC -D_STLP_HAS_WCHAR_T -D_STLP_NO_IOSTREAMS -Dwint_t=int -DPLAYSTATION2=1 -DNUM=100 -DUSE_RWOPS -I../include -I./include -I$(PS2SDK)/ports/include/SDL -I$(PS2SDK)/ports/include -I../common I$(PS2SDK)/ee/include
 	LIBS = $(SUBLIBS) -mno-crt0 -T/usr/local/ps2dev/ps2sdk/ee/startup/linkfile /usr/local/ps2dev/ps2sdk/ee/startup/crt0.o ../ports/ps2/cdvd.s ../ports/ps2/usbd.s ../ports/ps2/usbhdfsd.s ../ports/ps2/SJPCM.s -L. -lstdc++ -lc -lstlport -L$(PS2DEV)/gsKit/lib -L../lib -L$(PS2SDK)/ports/lib -lSDL_image -ljpeg -ltiff -lpng -lz -ldebug -lSDL_ttf -lsdlmixer -lfreetype -lm -lcdvd -lsdl -lmf -lpacket -ldma -L/usr/local/ps2dev/ps2sdk/ee/lib -L/usr/local/ps2dev/gsKit/lib -L/usr/local/ps2dev/ps2sdk/ports/lib -lmc
-	LIBS +=  -lstdc++  -Wl,--whole-archive $(PS2SDK)/ee/lib/libc.a -Wl,--no-whole-archive $(PS2DEV)/ee/ee/lib/libc.a -Wl,--whole-archive -lkernel -Wl,--no-whole-archive
+        LIBS +=  -lstdc++  -Wl,--whole-archive $(PS2SDK)/ee/lib/libc.a -Wl,--no-whole-archive $(PS2DEV)/ee/ee/lib/libc.a -Wl,--whole-archive -lkernel -Wl,--no-whole-archive
 	QMAKE_POST_LINK += ee-strip --strip-all rockbot.elf
 }
 
@@ -209,10 +232,10 @@ wii {
 	QMAKE_CXX = $(DEVKITPPC)/bin/powerpc-eabi-g++
 	QMAKE_LINK = $(DEVKITPPC)/bin/powerpc-eabi-g++
 
-    QMAKE_CXXFLAGS += -Dmain=SDL_main -G0 -Wall -O2 -DWII -DHANDHELD -g -I. -I/arquivos/development/SDK/Wii/devkitpro/libogc/include/  -I/arquivos/development/SDK/Wii/devkitpro/libogc/include/ogc/ -I/arquivos/development/SDK/Wii/devkitpro/devkitPPC/include/ -G0 -Wall -O2 -DWII -g -fno-exceptions -fno-rtti -g
-    LIBS = -Dmain=SDL_main -L. -L/arquivos/development/SDK/Wii/devkitpro/libogc/lib/wii/ -L/arquivos/development/SDK/Wii/devkitpro/libogc/lib/ -L/arquivos/development/SDK/Wii/devkitpro/devkitPPC/lib/ -lSDL_ttf -lSDL_mixer -lSDL_image -lsmpeg -lSDL -ljpeg -lpng -lfreetype -lvorbisidec -lz -lfat -lwiiuse -lbte -lwiikeyboard -logc -lm -mrvl
+        QMAKE_CXXFLAGS += -Dmain=SDL_main -G0 -Wall -O2 -DWII -DHANDHELD -g -I. -I$(DEVKITPPC)/../libogc/include/  -I$(DEVKITPPC)/../libogc/include/ogc/ -I$(DEVKITPPC)/devkitPPC/include/ -G0 -Wall -O2 -DWII -g -fno-exceptions -fno-rtti -g
+        LIBS = -Dmain=SDL_main -L. -L$(DEVKITPPC)/../libogc/lib/wii/ -L$(DEVKITPPC)/../libogc/lib/ -L$(DEVKITPPC)/devkitPPC/lib/ -lSDL_ttf -lSDL_mixer -lSDL_image -lsmpeg -lSDL -ljpeg -lpng -lfreetype -lvorbisidec -lz -lfat -lwiiuse -lbte -lwiikeyboard -logc -lm -mrvl
 
-	INCLUDES = -I/arquivos/development/SDK/Wii/devkitpro/libogc/include/ -I/arquivos/development/SDK/Wii/devkitpro/devkitPPC/include/ -I. -I../include -I.
+        INCLUDES = -I$(DEVKITPPC)/libogc/include/ -I$(DEVKITPPC)/devkitPPC/include/ -I. -I../include -I.
 
 #	QMAKE_POST_LINK += $DEVKITPPC/bin/powerpc-eabi-strip rockbot.elf
 }
@@ -261,16 +284,14 @@ SOURCES += main.cpp \
     options/key_map.cpp \
     graphic/draw.cpp \
 	aux_tools/trajectory_parabola.cpp \
-	file/convert.cpp
+        file/convert.cpp \
+    character/movement/jump.cpp \
+    character/movement/inertia.cpp \
+    scenes/password_generator.cpp \
+    file/fio_scenes.cpp
 
 HEADERS += \
 	character/character.h \
-    st_hitPoints.h \
-    st_platform.h \
-    st_teleporter.h \
-    st_common.h \
-    st_characterState.h \
-    st_projectile.h \
     graphicslib.h \
     defines.h \
     inputlib.h \
@@ -310,12 +331,36 @@ HEADERS += \
     graphic/draw.h \
 	aux_tools/trajectory_parabola.h \
     file/convert.h \
-	file/v_2_1_2.h
+	file/v_2_1_2.h \
+    file/v_3_0_0.h \
+    file/v_3_0_1.h \
+    file/format/st_characterState.h \
+    file/format/st_common.h \
+    file/format/st_hitPoints.h \
+    file/format/st_platform.h \
+    file/format/st_projectile.h \
+    file/format/st_teleporter.h \
+    character/movement/jump.h \
+    file/scenes_v300.h \
+    file/v3/file_stage.h \
+    file/v3/file_save.h \
+    file/v3/file_config.h \
+    character/movement/inertia.h \
+    file/v_3_0_1.h \
+    file/v3/3_0_1/v301_config.h \
+    file/v3/3_0_1/v301_stage.h \
+    file/v3/3_0_1/v301_scenes.h \
+    file/v3/3_0_1/v301_save.h \
+    file/version.h \
+    scenes/password_generator.h \
+    file/v3/3_0_1/file_scene.h \
+    file/fio_scenes.h
 
 OTHER_FILES += \
     docs/RoadMap.txt \
     rockbot_dingux.pro \
-    docs/Changelog.txt
+    docs/Changelog.txt \
+    docs/graphic_conversion.txt
 
 
 

@@ -1,7 +1,7 @@
 #ifndef MAINWINDOW_H
 #define MAINWINDOW_H
 
-#include <QtGui/QMainWindow>
+#include <QMainWindow>
 #include <QDir>
 #include <QModelIndex>
 #include <QStandardItemModel>
@@ -18,7 +18,9 @@
 #include "mainwindow_tab/game_properties_tab.h"
 #include "mainwindow_tab/map_tab.h"
 #include "mainwindow_tab/player_edit.h"
-
+#include "mainwindow_tab/armor_edit.h"
+#include "scenes/sceneeditorwindow.h"
+#include "aboutwindow.h"
 
 namespace Ui
 {
@@ -53,6 +55,7 @@ private:
     game_properties_tab *game_prop_tab;
     map_tab *map_edit_tab;
     player_edit *player_edit_tab;
+    armor_edit *armor_edit_tab;
 
 	void fill_NPC_edit_tab();
 	void fill_background_list();
@@ -136,12 +139,6 @@ private slots:
 
 	void on_can_slide_checkbox_toggled(bool checked);
 
-    void on_players_tab_jumpgravity_valueChanged(double arg1);
-
-    void on_players_tab_fallgravity_valueChanged(double arg1);
-
-    void on_players_tab_jumpspeed_valueChanged(double arg1);
-
     void on_players_tab_movespeed_valueChanged(int arg1);
 
     void on_players_tab_hasshield_toggled(bool checked);
@@ -156,14 +153,25 @@ private slots:
 
     void on_actionSwap_Maps_triggered();
 
+    void on_actionAction_subboss_triggered(bool checked);
 
-    void on_actionBeaten_toggled(bool arg1);
+    void on_actionScenes_Editor_triggered();
+
+    void on_actionObjects_toggled(bool arg1);
+
+    void on_actionNPCs_toggled(bool arg1);
+
+    void on_actionTeleporters_toggled(bool arg1);
+
+    void on_actionAbout_triggered();
 
 private:
 	// USED IN NPC TAB
 	std::string _npcedit_tab_graphic;
 	int _npcedit_tab_selectednpc;
 	bool _data_loading;
+    SceneEditorWindow* scenes_window;
+    AboutWindow* about_window;
 
 };
 

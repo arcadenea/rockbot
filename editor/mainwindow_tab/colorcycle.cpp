@@ -77,6 +77,9 @@ void colorcycle_edit::reload_colors()
 	}
 	// fill duration spinboxes
 	for (int i=0; i<10; i++) {
+        if (stage_data.stages[dataExchanger->currentStage].colorcycle.duration[i][_selected_color_key] <= 0) {
+            stage_data.stages[dataExchanger->currentStage].colorcycle.duration[i][_selected_color_key] = 100;
+        }
 		_timer_list[i]->setValue(stage_data.stages[dataExchanger->currentStage].colorcycle.duration[i][_selected_color_key]);
 	}
 }

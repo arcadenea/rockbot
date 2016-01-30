@@ -3,6 +3,9 @@
 
 #include "graphicslib.h"
 
+#define FLASH_POINTS_N 10
+
+
 /**
  * @brief
  *
@@ -21,7 +24,9 @@ public:
     void update_screen(); // replaces external calls to graphLib.updateScreen
     void update_colorcycle() const;
     void set_rain_enabled(bool enabled);
+    void set_flash_enabled(bool enabled);
     void show_rain();
+    void show_flash();
     void show_boss_intro_sprites(short boss_id, bool show_fall);
     void show_ready();
     void show_bubble(int x, int y);
@@ -41,7 +46,7 @@ private:
      * @param surface
      * @param initial_line
      */
-    void draw_credit_line(graphicsLib_gSurface& surface, unsigned short initial_line);
+    void draw_credit_line(graphicsLib_gSurface& surface, Uint8 initial_line);
 
 
 private:
@@ -49,6 +54,13 @@ private:
     unsigned int _rain_timer;
     short int _rain_pos;
     bool _rain_enabled;
+
+    graphicsLib_gSurface flash_obj;
+    short int _flash_pos;
+    unsigned int _flash_timer;
+    bool _flash_enabled;
+    st_position flash_points[FLASH_POINTS_N];
+
     struct graphicsLib_gSurface ready_message;
     graphicsLib_gSurface _bubble_gfx;
     // USED IN CREDITS

@@ -27,24 +27,36 @@ common::~common()
 
 void common::fill_files_combo(std::string directory, QComboBox* combo, bool show_none)
 {
+
+    std::cout << "fill_files_combo::DEBUG #A" << std::endl;
+
     combo->clear(); // delete all previous entries
 
+    std::cout << "fill_files_combo::DEBUG #B - count: " << combo->count() << std::endl;
+
     combo->addItem(QString("")); // for "empty"
+    std::cout << "fill_files_combo::DEBUG #C" << std::endl;
+
     std::string str_filepath(FILEPATH+directory);
     QString filepath(str_filepath.c_str());
     QDir dir = QDir(filepath);
+
     if (!dir.exists()) {
         std::cout << ">> MainWindow::fill_files_combo ERROR: Directory '" << str_filepath << " does not exist. <<" << std::endl;
         exit(-1);
     }
+
+    std::cout << "fill_files_combo::DEBUG #D" << std::endl;
+
     dir.setFilter(QDir::Files | QDir::NoSymLinks | QDir::NoDotAndDotDot);
     dir.setSorting(QDir::Size | QDir::Reversed);
 	if (show_none == true) {
 		combo->addItem(QString("None"));
 	}
-    QFileInfoList list = dir.entryInfoList();
-    for (int i = 0; i < list.size(); ++i) {
-        QFileInfo fileInfo = list.at(i);
+
+    std::cout << "fill_files_combo::DEBUG #E" << std::endl;
+
+    foreach (const QFileInfo &fileInfo, dir.entryInfoList()) {
         if (fileInfo.fileName().length() > 30) {
             std::cout << "ERROR: file '" << fileInfo.fileName().toStdString() << "' surpasses the maximum number of file-characters (" << CHAR_FILENAME_SIZE << ")" << std::endl;
         } else {
@@ -81,9 +93,11 @@ void common::fill_graphicfiles_listwidget(std::string directory, QListWidget* li
             std::string filename = FILEPATH + directory + "/" + fileInfo.fileName().toStdString();
             //std::cout << ">> MainWindow::fill_graphicfiles_listwidget DEBUG: filename: '" << filename << std::endl;
             QPixmap image(filename.c_str());
-            image = image.copy(0, 0, image.width(), image.height());
-            image = image.scaled(32, 32);
-            item->setIcon(image);
+            if (image.isNull() == false && image.width() > 0) {
+                image = image.copy(0, 0, image.width(), image.height());
+                image = image.scaled(32, 32);
+                item->setIcon(image);
+            }
             listWidget->addItem(item);
         }
     }
@@ -119,27 +133,17 @@ void common::fill_graphicfiles_combobox(std::string directory, QComboBox *comboW
 }
 
 
-void common::fill_iatypes_combo(QComboBox* combo)
-{
-    combo->clear(); // delete all previous entries
-
-    char* IA_TYPE_NAMES[IA_TYPES_COUNT] = { "IA_STAND", "IA_WAIT", "IA_FOLLOW", "IA_ZIGZAG", "IA_SIDETOSIDE", "IA_BAT", "IA_ROOF_SHOOTER", "IA_GROUND_SHOOTER", "IA_SHOOT_AND_GO", "IA_FLY_ZIG_ZAG", "IA_BUTTERFLY", "IA_HORIZONTAL_GO_AHEAD", "IA_HORIZONTAL_TURN", "IA_FIXED_JUMPER", "IA_SIDE_SHOOTER", "IA_GHOST", "IA_FISH", "IA_DOLPHIN", "IA_VERTICAL_ZIGZAG" };
-
-    for (int i=0; i<IA_TYPES_COUNT; i++) {
-        combo->addItem(QString(IA_TYPE_NAMES[i]));
-    }
-    combo->update();
-}
-
 void common::fill_npc_combo(QComboBox* combo)
 {
     combo->clear(); // delete all previous entries
 
-    for (int i=0; i<GAME_MAX_OBJS; i++) {
-        if (game_data.game_npcs[i].id != -1) {
-            QString temp_str = QString("[") + QString::number(game_data.game_npcs[i].id) + QString("] - ") + QString(game_data.game_npcs[i].name);
-            combo->addItem(temp_str);
+    for (int i=0; i<FS_GAME_MAX_NPCS; i++) {
+        QString temp_str = QString("[");
+        if (i < 10) {
+            temp_str += "0";
         }
+        temp_str += QString::number(i) + QString("] - ") + QString(game_data.game_npcs[i].name);
+        combo->addItem(temp_str);
     }
 }
 
@@ -147,11 +151,9 @@ void common::fill_object_combo(QComboBox* combo)
 {
     combo->clear(); // delete all previous entries
 
-    for (int i=0; i<GAME_MAX_OBJS; i++) {
-		if (game_data.objects[i].id != -1) {
-            QString temp_str = QString("[") + QString::number(game_data.objects[i].id) + QString("] - ") + QString(game_data.objects[i].name);
-			combo->addItem(temp_str);
-		}
+    for (int i=0; i<FS_GAME_MAX_NPCS; i++) {
+        QString temp_str = QString("[") + QString::number(i) + QString("] - ") + QString(game_data.objects[i].name);
+        combo->addItem(temp_str);
 	}
 }
 
@@ -160,14 +162,6 @@ void common::fill_weapons_combo(QComboBox *combo)
 {
     combo->clear(); // delete all previous entries
 
-    /*
-    for (int i=0; i<MAX_WEAPON_N; i++) {
-        if (game_data.weapons[i].id != -1) {
-			QString temp_str = QString("[") + QString::number(game_data.weapons[i].id) + QString("] - ") + QString(game_data.weapons[i].name);
-            combo->addItem(temp_str);
-        }
-    }
-    */
     QString temp_str = QString("[0] - Normal Weapon");
     combo->addItem(temp_str);
     for (int i=1; i<9; i++) {
@@ -179,11 +173,9 @@ void common::fill_weapons_combo(QComboBox *combo)
 void common::fill_weapons_names_combo(QComboBox *combo)
 {
     combo->clear(); // delete all previous entries
-    for (int i=0; i<MAX_WEAPON_N; i++) {
-        if (game_data.weapons[i].id != -1) {
-            QString temp_str = QString("[") + QString::number(game_data.weapons[i].id) + QString("] - ") + QString(game_data.weapons[i].name);
-            combo->addItem(temp_str);
-        }
+    for (int i=0; i<FS_MAX_WEAPONS; i++) {
+        QString temp_str = QString("[") + QString::number(i) + QString("] - ") + QString(game_data.weapons[i].name);
+        combo->addItem(temp_str);
     }
 }
 
@@ -202,7 +194,7 @@ void common::fill_projectiles_combo(QComboBox *combo)
     combo->clear(); // delete all previous entries
 
     combo->addItem(QString("[") + QString::number(-1) + QString("] - ") + QString("DEFAULT"));
-	for (int i=0; i<MAX_FILE_PROJECTILES; i++) {
+    for (int i=0; i<FS_MAX_PROJECTILES; i++) {
 		QString temp_str = QString("[") + QString::number(i) + QString("] - ") + QString(game_data.projectiles[i].name);
         combo->addItem(temp_str);
     }
@@ -281,7 +273,7 @@ void common::fill_ai_list(QComboBox *combo)
 void common::fill_stages_combo(QComboBox *combo)
 {
     combo->clear(); // delete all previous entries
-    for (int i=0; i<MAX_STAGES; i++) {
+    for (int i=0; i<FS_MAX_STAGES; i++) {
         if (strlen(stage_data.stages[i].name) > 0) {
             //std::cout << "STAGE: '" << stage_data.stages[i].name << "'" << std::endl;
             combo->addItem(QString(stage_data.stages[i].name));
@@ -292,7 +284,7 @@ void common::fill_stages_combo(QComboBox *combo)
 void common::fill_players_combo(QComboBox* combo)
 {
     combo->clear(); // delete all previous entries
-    for (int i=0; i<MAX_FILE_PLAYERS; i++) {
+    for (int i=0; i<FS_MAX_PLAYERS; i++) {
         combo->addItem(QString::number(i+1)+QString(" [")+QString(game_data.players[i].name)+QString("]"));
     }
 }
@@ -316,17 +308,22 @@ void common::fill_npc_listwidget(QListWidget *listWidget)
 
     listWidget->clear();
 
-    for (int i=0; i<GAME_MAX_OBJS; i++) {
-        if (game_data.game_npcs[i].id != -1) {
-            item = new QListWidgetItem;
-            item->setText(game_data.game_npcs[i].name);
-            std::string filename = FILEPATH + "/data/images/sprites/enemies/" + game_data.game_npcs[i].graphic_filename;
-            QPixmap image(filename.c_str());
-            image = image.copy(0, 0, game_data.game_npcs[i].frame_size.width, game_data.game_npcs[i].frame_size.height);
-            image = image.scaled(32, 32);
-            item->setIcon(image);
-            listWidget->addItem(item);
+    for (int i=0; i<FS_GAME_MAX_NPCS; i++) {
+        item = new QListWidgetItem;
+        QString temp_str = QString("[");
+        if (i < 10) {
+            temp_str += "0";
         }
+        temp_str += QString::number(i) + QString("] - ") + QString(game_data.game_npcs[i].name);
+        item->setText(temp_str);
+        std::string filename = FILEPATH + "/data/images/sprites/enemies/" + game_data.game_npcs[i].graphic_filename;
+        QPixmap image(filename.c_str());
+        image = image.copy(0, 0, game_data.game_npcs[i].frame_size.width, game_data.game_npcs[i].frame_size.height);
+        if (image.isNull() == false && image.width() > 0) {
+            image = image.scaled(32, 32);
+        }
+        item->setIcon(image);
+        listWidget->addItem(item);
     }
 
     listWidget->update();
@@ -338,17 +335,22 @@ void common::fill_object_listWidget(QListWidget *listWidget)
 
     listWidget->clear();
 
-    for (int i=0; i<GAME_MAX_OBJS; i++) {
-        if (game_data.objects[i].id != -1) {
-            item = new QListWidgetItem;
-            item->setText(game_data.objects[i].name);
-            std::string filename = FILEPATH + "/data/images/sprites/objects/" + game_data.objects[i].graphic_filename;
-            QPixmap image(filename.c_str());
-            image = image.copy(0, 0, game_data.objects[i].size.width, game_data.objects[i].size.height);
-            image = image.scaled(32, 32);
-            item->setIcon(image);
-            listWidget->addItem(item);
+    for (int i=0; i<FS_GAME_MAX_NPCS; i++) {
+        item = new QListWidgetItem;
+        QString temp_str = QString("[");
+        if (i < 10) {
+            temp_str += "0";
         }
+        temp_str += QString::number(i) + QString("] - ") + QString(game_data.objects[i].name);
+        item->setText(temp_str);
+        std::string filename = FILEPATH + "/data/images/sprites/objects/" + game_data.objects[i].graphic_filename;
+        QPixmap image(filename.c_str());
+        image = image.copy(0, 0, game_data.objects[i].size.width, game_data.objects[i].size.height);
+        if (image.isNull() == false && image.width() > 0) {
+            image = image.scaled(32, 32);
+        }
+        item->setIcon(image);
+        listWidget->addItem(item);
     }
 
 
@@ -358,10 +360,8 @@ void common::fill_object_listWidget(QListWidget *listWidget)
 std::vector<std::string> common::get_npc_names_list()
 {
     std::vector<std::string> res;
-    for (int i=0; i<GAME_MAX_OBJS; i++) {
-        if (game_data.game_npcs[i].id != -1) {
-            res.push_back(std::string(game_data.game_npcs[i].name));
-        }
+    for (int i=0; i<FS_GAME_MAX_NPCS; i++) {
+        res.push_back(std::string(game_data.game_npcs[i].name));
     }
     return res;
 }

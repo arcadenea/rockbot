@@ -14,7 +14,7 @@ struct st_player_graphics_data {
 	{
 
 		frame_size.width = 29;
-		frame_size.height = 32;
+        frame_size.height = 29;
 		hit_area.x = 4;
 		hit_area.y = 8;
 		hit_area.w = 21;
@@ -27,7 +27,7 @@ class Mediator {
 private:
 	int palleteX;
 	int palleteY;
-	char *selectedTileset;
+    std::string selectedTileset;
 
 public:
 	char gameName[50];
@@ -48,6 +48,7 @@ public:
 	int zoom;
 	int link_type;
 	int npc_direction;
+    int object_direction;
 	bool show_background_color;
 	bool show_bg1;
 	bool show_bg2;
@@ -58,7 +59,10 @@ public:
 	bool show_colorcycle1;
 	bool show_colorcycle2;
 	bool show_colorcycle3;
-    bool show_beaten;
+    int selectedAnimTileset;
+    bool show_objects_flag;
+    bool show_npcs_flag;
+    bool show_teleporters_flag;
 
 
 	struct format_v1_0::list_map_npc *npc_map_list;
@@ -69,7 +73,7 @@ public:
 	int getPalleteY();
 	void setPalleteX(int value);
 	void setPalleteY(int value);
-	char *getPallete();
+    std::string getPallete();
 	void setPallete(char *value);
 	void initGameVar();
 	void loadGame(int n);
@@ -103,7 +107,7 @@ public:
 	int current_weapon;
     int current_projectile;
 	int current_player;
-	int current_ai;
+    int current_ai;
 
 };
 

@@ -184,12 +184,18 @@
          <property name="maximum">
           <number>9999</number>
          </property>
+         <property name="value">
+          <number>100</number>
+         </property>
         </widget>
        </item>
        <item row="1" column="3">
         <widget class="QSpinBox" name="duration2">
          <property name="maximum">
           <number>9999</number>
+         </property>
+         <property name="value">
+          <number>100</number>
          </property>
         </widget>
        </item>
@@ -198,12 +204,18 @@
          <property name="maximum">
           <number>9999</number>
          </property>
+         <property name="value">
+          <number>100</number>
+         </property>
         </widget>
        </item>
        <item row="1" column="7">
         <widget class="QSpinBox" name="duration4">
          <property name="maximum">
           <number>9999</number>
+         </property>
+         <property name="value">
+          <number>100</number>
          </property>
         </widget>
        </item>
@@ -212,12 +224,18 @@
          <property name="maximum">
           <number>9999</number>
          </property>
+         <property name="value">
+          <number>100</number>
+         </property>
         </widget>
        </item>
        <item row="2" column="1">
         <widget class="QSpinBox" name="duration6">
          <property name="maximum">
           <number>9999</number>
+         </property>
+         <property name="value">
+          <number>100</number>
          </property>
         </widget>
        </item>
@@ -226,12 +244,18 @@
          <property name="maximum">
           <number>9999</number>
          </property>
+         <property name="value">
+          <number>100</number>
+         </property>
         </widget>
        </item>
        <item row="2" column="5">
         <widget class="QSpinBox" name="duration8">
          <property name="maximum">
           <number>9999</number>
+         </property>
+         <property name="value">
+          <number>100</number>
          </property>
         </widget>
        </item>
@@ -240,12 +264,18 @@
          <property name="maximum">
           <number>9999</number>
          </property>
+         <property name="value">
+          <number>100</number>
+         </property>
         </widget>
        </item>
        <item row="2" column="9">
         <widget class="QSpinBox" name="duration10">
          <property name="maximum">
           <number>9999</number>
+         </property>
+         <property name="value">
+          <number>100</number>
          </property>
         </widget>
        </item>

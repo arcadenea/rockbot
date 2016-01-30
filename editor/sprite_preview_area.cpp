@@ -49,29 +49,30 @@ void sprite_preview_area::paintEvent(QPaintEvent *)
     int adjust_x = game_data.game_npcs[dataExchanger->current_npc_n].sprites_pos_bg.x*2;
     int adjust_y = game_data.game_npcs[dataExchanger->current_npc_n].sprites_pos_bg.y*2;
 
+    //std::cout << "sprite_preview_area - this.w: " << this->width() << ", total_w: " << total_w << std::endl;
+
 
     //std::cout << "sprite_preview_area::paintEvent - filename: " << filename << ", img.w: " << fg_image.width() << ", _sprite_n: " << _sprite_n << std::endl;
-    if (fg_image.width() != 0) {
+    if (fg_image.isNull() == false && fg_image.width() > 0) {
         fg_image = fg_image.scaled(fg_image.width()*2, fg_image.height()*2);
         QRectF target(QPoint(center_x+adjust_x, center_y+adjust_y), QSize(game_data.game_npcs[dataExchanger->current_npc_n].frame_size.width*2, game_data.game_npcs[dataExchanger->current_npc_n].frame_size.height*2));
         //std::cout << "center_x: " << center_x << ", center_y: " << center_y << std::endl;
         QRectF source(QPoint(game_data.game_npcs[dataExchanger->current_npc_n].sprites[dataExchanger->current_sprite_type][_sprite_n].sprite_graphic_pos_x*game_data.game_npcs[dataExchanger->current_npc_n].frame_size.width*2, 0), QSize(game_data.game_npcs[dataExchanger->current_npc_n].frame_size.width*2, game_data.game_npcs[dataExchanger->current_npc_n].frame_size.height*2));
         painter.drawPixmap(target, fg_image, source);
 		//game_data.game_npcs[_npcedit_tab_selectednpc].sprites[dataExchanger->current_sprite_type][ui->frameList_listWidget->currentRow()].colision_rect.h
-		painter.drawRect(center_x+game_data.game_npcs[dataExchanger->current_npc_n].sprites[dataExchanger->current_sprite_type][_sprite_n].colision_rect.x, center_y+game_data.game_npcs[dataExchanger->current_npc_n].sprites[dataExchanger->current_sprite_type][_sprite_n].colision_rect.y, game_data.game_npcs[dataExchanger->current_npc_n].sprites[dataExchanger->current_sprite_type][_sprite_n].colision_rect.w*2, game_data.game_npcs[dataExchanger->current_npc_n].sprites[dataExchanger->current_sprite_type][_sprite_n].colision_rect.h*2);
+        //painter.drawRect(center_x+game_data.game_npcs[dataExchanger->current_npc_n].sprites[dataExchanger->current_sprite_type][_sprite_n].colision_rect.x, center_y+game_data.game_npcs[dataExchanger->current_npc_n].sprites[dataExchanger->current_sprite_type][_sprite_n].colision_rect.y, game_data.game_npcs[dataExchanger->current_npc_n].sprites[dataExchanger->current_sprite_type][_sprite_n].colision_rect.w*2, game_data.game_npcs[dataExchanger->current_npc_n].sprites[dataExchanger->current_sprite_type][_sprite_n].colision_rect.h*2);
     }
 
-    if (!bg_image.isNull()) {
+    if (bg_image.isNull() == false && bg_image.width() > 0) {
         bg_image = bg_image.scaled(bg_image.width()*2, bg_image.height()*2);
         QRectF target(QPoint(center_x, center_y), QSize(bg_image.width()*2, bg_image.height()*2));
         QRectF source(QPoint(0, 0), QSize(bg_image.width()*2, bg_image.height()*2));
         painter.drawPixmap(target, bg_image, source);
-        //std::cout << "Drawing bg_image (" << _bg_graphic_filename << ")" << std::endl;
     }
     // draw hit-area
-    painter.setBrush(QColor(255, 0, 0, 180));
+    painter.setBrush(QColor(255, 0, 0, 50));
     if (game_data.game_npcs[dataExchanger->current_npc_n].sprites[ANIM_TYPE_TELEPORT][0].colision_rect.w != 0 && game_data.game_npcs[dataExchanger->current_npc_n].sprites[ANIM_TYPE_TELEPORT][0].colision_rect.h != 0) {
-        painter.drawRect(center_x+game_data.game_npcs[dataExchanger->current_npc_n].sprites[ANIM_TYPE_TELEPORT][0].colision_rect.x*2, center_y+game_data.game_npcs[dataExchanger->current_npc_n].sprites[ANIM_TYPE_TELEPORT][0].colision_rect.y*2, game_data.game_npcs[dataExchanger->current_npc_n].sprites[ANIM_TYPE_TELEPORT][0].colision_rect.w*2, game_data.game_npcs[dataExchanger->current_npc_n].sprites[ANIM_TYPE_TELEPORT][0].colision_rect.h*2);
+        painter.drawRect(center_x+game_data.game_npcs[dataExchanger->current_npc_n].sprites[ANIM_TYPE_TELEPORT][0].colision_rect.x*2, center_y+adjust_y+game_data.game_npcs[dataExchanger->current_npc_n].sprites[ANIM_TYPE_TELEPORT][0].colision_rect.y*2, game_data.game_npcs[dataExchanger->current_npc_n].sprites[ANIM_TYPE_TELEPORT][0].colision_rect.w*2, game_data.game_npcs[dataExchanger->current_npc_n].sprites[ANIM_TYPE_TELEPORT][0].colision_rect.h*2);
     }
 }
 

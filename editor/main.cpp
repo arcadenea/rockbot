@@ -1,4 +1,4 @@
-#include <QtGui/QApplication>
+#include <QApplication>
 #include <dirent.h>
 #include <assert.h>
 
@@ -17,13 +17,16 @@ std::string SAVEPATH;
 
 #include "defines.h"
 #include "enum_names.h"
+#include "file/file_io.h"
 
 struct format_v1_0::file_game game;
 char EDITOR_FILEPATH[512];
 
-#include "../file/file_io.h"
 CURRENT_FILE_FORMAT::file_game game_data;
 CURRENT_FILE_FORMAT::file_stages stage_data;
+std::vector<CURRENT_FILE_FORMAT::file_scene_sequence> sequences;
+std::vector<CURRENT_FILE_FORMAT::file_scene> scenes;
+
 
 
 void remove_duplicated()
@@ -45,9 +48,10 @@ void remove_duplicated()
 			// remove duplicated OBJECTS
 			for (int k=0; k<MAX_MAP_NPC_N; k++) {
 				for (int l=0; l<MAX_MAP_NPC_N; l++) {
-                    //stage_data.stages[i].maps[j].map_objects[k].id_object != -1 && stage_data.stages[i].maps[j].map_objects[l].id_object != -1 &&
-                    if (stage_data.stages[i].maps[j].map_objects[l].id_object != -1 && k != l && stage_data.stages[i].maps[j].map_objects[k].start_point == stage_data.stages[i].maps[j].map_objects[l].start_point) {
-                        std::cout << ">>> removing duplicated OBJECT stage[" << i << "].map[" << j << "].object[" << l << "].id: " << stage_data.stages[i].maps[j].map_objects[l].id_object << " <<<" << std::endl;
+                    if (stage_data.stages[i].maps[j].map_objects[k].id_object != -1 && stage_data.stages[i].maps[j].map_objects[l].id_object != -1 && k != l && stage_data.stages[i].maps[j].map_objects[k].start_point == stage_data.stages[i].maps[j].map_objects[l].start_point) {
+                        std::cout << "# id1: " << (int)stage_data.stages[i].maps[j].map_objects[k].id_object << ", id2: " << (int)stage_data.stages[i].maps[j].map_objects[l].id_object;
+                        std::cout << ", pos#1[" << k << "], pos2[" << l << "]";
+                        std::cout << ", x1: " << stage_data.stages[i].maps[j].map_objects[k].start_point.x << ", x2: " << stage_data.stages[i].maps[j].map_objects[l].start_point.x << ", y1: " << stage_data.stages[i].maps[j].map_objects[k].start_point.y << ", y2: " << stage_data.stages[i].maps[j].map_objects[l].start_point.y << std::endl;
                         stage_data.stages[i].maps[j].map_objects[l].id_object = -1;
                         stage_data.stages[i].maps[j].map_objects[l].start_point.x = -1;
                         stage_data.stages[i].maps[j].map_objects[l].start_point.y = -1;
@@ -108,17 +112,17 @@ void clean_bad_data() {
 }
 
 CURRENT_FILE_FORMAT::file_io fio;
+bool GAME_FLAGS[FLAG_COUNT]; // compability for fio
 
 #undef main
 int main(int argc, char *argv[])
 {
-	assert_enum_items(); // check that stringfy variables are OK
 
 	std::string EXEC_NAME;
 	#ifndef WIN32
 		strncpy (EDITOR_FILEPATH, argv[0], strlen(argv[0])-7);
 		EXEC_NAME = "editor";
-	#else
+    #else
         strncpy (EDITOR_FILEPATH, argv[0], strlen(argv[0])-11);
 		EXEC_NAME = "editor.exe";
 	#endif
@@ -127,10 +131,17 @@ int main(int argc, char *argv[])
 	std::string argvString = std::string(argv[0]);
 	FILEPATH = argvString.substr(0, argvString.size()-EXEC_NAME.size());
     SAVEPATH = FILEPATH;
-    std::cout << " *** EXEC_NAME: " << EXEC_NAME << ", FILEPATH: " << FILEPATH << " ***" << std::endl;
+    std::cout << " *** EXEC_NAME: " << EXEC_NAME << ", FILEPATH: " << FILEPATH << ", SAVEPATH: " << SAVEPATH << " ***" << std::endl;
 
+    init_enum_names();
+    assert_enum_items(); // check that stringfy variables are OK
+
+
+    fio.check_conversion();
 	fio.read_game(game_data);
     fio.read_all_stages(stage_data);
+    fio.load_scene_sequence(sequences);
+    fio.load_scenes(scenes);
     clean_bad_data();
 
 	dataExchanger->initGameVar();

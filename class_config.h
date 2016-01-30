@@ -1,7 +1,7 @@
 #ifndef CLASS_CONFIG_H
 #define CLASS_CONFIG_H
 
-#include "st_common.h"
+#include "file/format/st_common.h"
 #include "character/classplayer.h"
 
 #define WPN_COLS 2

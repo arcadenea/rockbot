@@ -1,5 +1,6 @@
 #include "psp_ram.h"
-#include "/usr/local/pspdev/psp/include/malloc.h"
+//#include "/usr/local/pspdev/psp/include/malloc.h"
+#include "malloc.h"
 
 psp_ram::psp_ram()
 {

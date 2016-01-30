@@ -31,7 +31,16 @@ void inputLib::init_joystick()
 {
 	SDL_JoystickEventState(SDL_ENABLE);
 	joystick1 = SDL_JoystickOpen(0);
-	joystick2 = SDL_JoystickOpen(1);
+    joystick2 = SDL_JoystickOpen(1);
+// gamecube controller init
+#ifdef WII
+    for (int i=7; i>= 4; i--) {
+        SDL_Joystick *joy = SDL_JoystickOpen(i);
+        if (joy) {
+            printf(">>>>>>>>>>>>>>>>>> init controller #%d <<<<<<<<<<<<<<<<<<<<<<\n", i);
+        }
+    }
+#endif
 }
 
 // ********************************************************************************************** //
@@ -64,7 +73,6 @@ void inputLib::readInput()
         }
 
         if (game_config.input_type == INPUT_TYPE_DOUBLE || game_config.input_type == INPUT_TYPE_KEYBOARD) {
-//        std::cout << "#1 INPUT::readInput - KEYBOARD[" << (int)event.key.keysym.sym << "] pressed." << std::endl;
             if (event.type == SDL_KEYDOWN) {
                 for (int i=0; i<BTN_COUNT; i++) {
                     if (game_config.keys_codes[i] != -1 && game_config.keys_codes[i] == event.key.keysym.sym) {
@@ -76,7 +84,6 @@ void inputLib::readInput()
                     }
                 }
             } else if (event.type == SDL_KEYUP) {
-//        std::cout << "#1 INPUT::readInput - KEYBOARD[" << (int)event.key.keysym.sym << "] pressed." << std::endl;
                 for (int i=0; i<BTN_COUNT; i++) {
                     if (game_config.keys_codes[i] != -1 && game_config.keys_codes[i] == event.key.keysym.sym) {
                         p1_input[i] = 0;
@@ -101,7 +108,7 @@ void inputLib::readInput()
         }
         if (game_config.input_type == INPUT_TYPE_DOUBLE || game_config.input_type == INPUT_TYPE_JOYSTICK) {
             if (event.type == SDL_JOYBUTTONDOWN) {
- //               std::cout << "#1 INPUT::readInput - joystick button[" << (int)event.jbutton.button << "] pressed." << std::endl;
+                //std::cout << "#1 INPUT::readInput - joystick button[" << (int)event.jbutton.button << "] pressed." << std::endl;
                 for (int i=0; i<BTN_COUNT; i++) {
                     //std::cout << "#1 INPUT::readInput - button_codes[" << i << "]: " << game_config.button_codes[i] << std::endl;
                     if (game_config.button_codes[i] != -1 && game_config.button_codes[i] == event.jbutton.button) {
@@ -114,7 +121,7 @@ void inputLib::readInput()
                     }
                 }
             } else if (event.type == SDL_JOYBUTTONUP) {
- //               std::cout << "#2 INPUT::readInput - joystick button[" << event.jbutton.button << "] released" << std::endl;
+                //std::cout << "#2 INPUT::readInput - joystick button[" << event.jbutton.button << "] released" << std::endl;
                 for (int i=0; i<BTN_COUNT; i++) {
                     if (game_config.button_codes[i] != -1 && game_config.button_codes[i] == event.jbutton.button) {
                         p1_input[i] = 0;
@@ -128,7 +135,6 @@ void inputLib::readInput()
         }
         if ((game_config.input_mode == INPUT_MODE_ANALOG || game_config.input_mode == INPUT_MODE_DOUBLE) && event.type == SDL_JOYAXISMOTION) {
             if (event.jaxis.axis == 0) {
-//                std::cout << "#2 INPUT::readInput - joystick axis0[" << event.jaxis.value << "]" << std::endl;
                 if (event.jaxis.value < -JOYVAL) {
                     p1_input[BTN_RIGHT] = 0;
                     p1_input[BTN_LEFT] = 1;
@@ -143,7 +149,6 @@ void inputLib::readInput()
                 }
             }
             if (event.jaxis.axis == 1) {
-//                std::cout << "#2 INPUT::readInput - joystick axis1[" << event.jaxis.value << "]" << std::endl;
                 if (event.jaxis.value < -JOYVAL) {
                     p1_input[BTN_DOWN] = 0;
                     p1_input[BTN_UP] = 1;
@@ -193,7 +198,6 @@ void inputLib::readInput()
 #else
 
             if (event.jhat.value == 1 || event.jhat.value == 3 || event.jhat.value == 9) { // up
-
                 p1_input[BTN_DOWN] = 0;
                 p1_input[BTN_UP] = 1;
                 _used_keyboard = false;
@@ -296,7 +300,8 @@ void inputLib::wait_keypress()
     clean();
 }
 
-void inputLib::pick_key_or_button(INPUT_COMMANDS key)
+// returns false for keyboard, true for joysticks
+bool inputLib::pick_key_or_button(CURRENT_FILE_FORMAT::st_game_config &game_config_copy, INPUT_COMMANDS key)
 {
     clean();
     waitTime(50);
@@ -304,18 +309,21 @@ void inputLib::pick_key_or_button(INPUT_COMMANDS key)
         while (SDL_PollEvent(&event)) {
             if (game_config.input_type == INPUT_TYPE_DOUBLE || game_config.input_type == INPUT_TYPE_KEYBOARD) {
                 if (event.type == SDL_KEYDOWN) {
-                    game_config.keys_codes[key] = event.key.keysym.sym;
-                    return;
+                    std::cout << "BEFORE keys_codes[" << key << "]: " << game_config_copy.keys_codes[key] << std::endl;
+                    game_config_copy.keys_codes[key] = event.key.keysym.sym;
+                    std::cout << "AFTER keys_codes[" << key << "]: " << game_config_copy.keys_codes[key] << std::endl;
+                    return false;
                 }
                 SDL_PumpEvents();
             }
             if (game_config.input_type == INPUT_TYPE_DOUBLE || game_config.input_type == INPUT_TYPE_JOYSTICK) {
                 if (event.type == SDL_JOYBUTTONDOWN) {
-                    game_config.button_codes[key] = event.jbutton.button;
-                    return;
+                    game_config_copy.button_codes[key] = event.jbutton.button;
+                    return true;
                 }
             }
         }
         waitTime(5);
     }
+    return false;
 }

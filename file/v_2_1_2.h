@@ -8,10 +8,7 @@
 #include "v_2_0_4.h"
 #include "v_2_1.h"
 #include "v_2_1_1.h"
-#include "defines.h"
-#ifdef DREAMCAST
-#include <SDL/SDL_dreamcast.h>
-#endif
+#include "../defines.h"
 
 extern std::string FILEPATH; /**< TODO */
 
@@ -240,24 +237,6 @@ struct st_game_config {
         keys_codes[BTN_RIGHT] = SDLK_RIGHT;
         keys_codes[BTN_UP] = SDLK_UP;
         keys_codes[BTN_DOWN] = SDLK_DOWN;
-#elif DREAMCAST
-        input_type = INPUT_TYPE_JOYSTICK;
-        input_mode = INPUT_MODE_DOUBLE;
-        for (int i=0; i<BTN_COUNT; i++) {
-            keys_codes[i] = -1;
-        }
-        button_codes[BTN_SHIELD] = SDL_DC_A;
-        button_codes[BTN_DASH] = SDL_DC_B;
-        button_codes[BTN_JUMP] = SDL_DC_X;
-        button_codes[BTN_ATTACK] = SDL_DC_Y;
-        button_codes[BTN_L] = SDL_DC_L;
-        button_codes[BTN_R] = SDL_DC_R;
-        button_codes[BTN_QUIT] = -1;
-        button_codes[BTN_START] = SDL_DC_START;
-        button_codes[BTN_LEFT] = -1; 
-        button_codes[BTN_RIGHT] = -1;
-        button_codes[BTN_UP] = -1;
-        button_codes[BTN_DOWN] = -1;
 #else
         for (int i=0; i<BTN_COUNT; i++) {
             button_codes[i] = -1;
@@ -299,8 +278,6 @@ struct st_game_config {
         return PLATFORM_PSP;
 #elif WII
         return PLATFORM_WII;
-#elif DREAMCAST
-        return PLATFORM_DREAMCAST;
 #else
         return PLATFORM_WINDOWS;
 #endif

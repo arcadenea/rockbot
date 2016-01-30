@@ -40,7 +40,7 @@ void weapon_edit::on_weapon_select_combo_currentIndexChanged(int index)
     _selected_weapon = index;
 	ui->weapon_name->setText(QString(game_data.weapons[_selected_weapon].name));
 	ui->weapon_damage->setValue(game_data.weapons[_selected_weapon].damage);
-    std::cout << "weapon.projectile_id: " << game_data.weapons[_selected_weapon].id_projectile << std::endl;
+    //std::cout << "weapon.projectile_id: " << (int)game_data.weapons[_selected_weapon].id_projectile << std::endl;
     ui->weapon_projectile_type->setCurrentIndex(game_data.weapons[_selected_weapon].id_projectile+1); // +1 because of the -1 default projectile
     _loaded = true;
 }
@@ -59,7 +59,7 @@ void weapon_edit::on_weapon_projectile_type_currentIndexChanged(int index)
     if (_loaded == false) {
         return;
     }
-    std::cout << ">> on_weapon_projectile_type_currentIndexChanged - _selected_weapon: " << _selected_weapon << ", index: " << index << std::endl;
+    //std::cout << ">> on_weapon_projectile_type_currentIndexChanged - _selected_weapon: " << _selected_weapon << ", index: " << index << std::endl;
     game_data.weapons[_selected_weapon].id_projectile = index-1; //-1 is because default weapon (-1)
 }
 

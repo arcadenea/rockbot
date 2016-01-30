@@ -15,7 +15,7 @@ extern struct format_v_2_0_1::st_checkpoint checkpoint;
 // ********************************************************************************************** //
 stage::stage(int setStageN, std::vector<classPlayer> &set_player_list)
 {
-    std::cout << "STAGE::CONSTRUCTOR - setStageN: " << setStageN << std::endl;
+    //std::cout << "STAGE::CONSTRUCTOR - setStageN: " << setStageN << std::endl;
     std::fflush(stdout);
 	number = -1;
 	currentMap = 0;
@@ -27,11 +27,12 @@ stage::stage(int setStageN, std::vector<classPlayer> &set_player_list)
     }
 
     std::vector<classPlayer>::iterator it;
+    int n = 0;
 	for (it=set_player_list.begin(); it != set_player_list.end(); it++) {
-		classPlayer* temp = &(*it);
-        _player_list.push_back(temp);
+        //std::cout << "p[" << n << "] added to stage" << std::endl;
+        n++;
+        _player_list.push_back(&(*it));
 	}
-	//_player_list = player_list;
 	_color1_timer = 0;
 	_color2_timer = 0;
 	_color3_timer = 0;
@@ -77,16 +78,14 @@ void stage::loadStage() {
 	//std::cout << "stage::loadStage - number: " << number << std::endl;
 
 	// load stage maps
-    if (stage_data.id != -1) {
-        for (int i=0; i<STAGE_MAX_MAPS; i++) {
-            classMap *new_map = new classMap();
-            new_map->setMapNumber(i);
-            new_map->setStageNumber(number);
-            new_map->loadMap();
-            new_map->set_player_list(_player_list);
-            maps[i] = new_map;
-        }
-	}
+    for (int i=0; i<STAGE_MAX_MAPS; i++) {
+        classMap *new_map = new classMap();
+        new_map->setMapNumber(i);
+        new_map->setStageNumber(number);
+        new_map->loadMap();
+        new_map->set_player_list(_player_list);
+        maps[i] = new_map;
+    }
 }
 
 
@@ -239,14 +238,14 @@ void stage::show_npcs() const
     maps[currentMap]->show_npcs();
 }
 
-void stage::move_objects() const
+void stage::move_objects(bool paused) const
 {
-    maps[currentMap]->move_objects();
+    maps[currentMap]->move_objects(paused);
 }
 
-void stage::show_objects() const
+void stage::show_objects(int adjust) const
 {
-    maps[currentMap]->show_objects();
+    maps[currentMap]->show_objects(adjust);
 }
 
 bool stage::boss_hit_ground() const
@@ -287,17 +286,14 @@ int stage::get_teleport_minimal_y(int xpos) const
         int map_lock = maps[currentMap]->getMapPointLock(st_position(tilex, i));
         bool found_bad_point = false;
         if (map_lock != TERRAIN_UNBLOCKED && map_lock != TERRAIN_WATER) { // found a stop point, now check above ones
-            //std::cout << "stage::get_teleport_minimal_y - found lock-point at [" << i << "] - test above points..." << std::endl;
             for (int j=i-1; j>=i-3; j--) {
                 int map_lock2 = maps[currentMap]->getMapPointLock(st_position(tilex, j));
                 if (map_lock2 != TERRAIN_UNBLOCKED && map_lock2 != TERRAIN_WATER) { // found a stop point, now check above ones
                     found_bad_point = true;
-                    //std::cout << "stage::get_teleport_minimal_y - bad point at [" << j << "] - map_lock2: " << map_lock2 << "." << std::endl;
                     break;
                 }
             }
             if (found_bad_point == false) {
-                //std::cout << "stage::get_teleport_minimal_y - GOOD point at [" << i << "]" << std::endl;
                 return i;
             }
         }
@@ -310,3 +306,17 @@ void stage::reset_objects_timers() const
     //std::cout << "================== stage::reset_objects_timers" << std::endl;
     maps[currentMap]->reset_objects_timers();
 }
+
+bool stage::subboss_alive_on_left(short tileX)
+{
+    return maps[currentMap]->subboss_alive_on_left(tileX);
+}
+
+void stage::activate_final_boss_teleporter()
+{
+    for (int i=0; i<PRELOAD_MAP_N; i++) {
+        std::cout << "stage::activate_final_boss_teleporter - currentMap: " << currentMap << std::endl;
+        maps[currentMap]->activate_final_boss_teleporter();
+    }
+}
+

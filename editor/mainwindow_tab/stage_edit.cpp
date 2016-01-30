@@ -42,6 +42,8 @@ stage_edit::stage_edit(QWidget *parent) : QWidget(parent), ui(new Ui::stage_edit
     ui->boss_dialog_answer2_line1->setMaxLength(EDITOR_DIALOG_LINE_LIMIT);
     ui->boss_dialog_answer2_line2->setMaxLength(EDITOR_DIALOG_LINE_LIMIT);
     ui->boss_dialog_answer2_line3->setMaxLength(EDITOR_DIALOG_LINE_LIMIT);
+
+    dataExchanger->currentStage = INTRO_STAGE;
 	fill_stage_tab_data();
     _data_loading = false;
 }
@@ -53,7 +55,8 @@ stage_edit::~stage_edit()
 
 void stage_edit::reload()
 {
-    dataExchanger->currentStage = 0;
+    dataExchanger->currentStage = INTRO_STAGE;
+    std::cout << "#A - STAGE_N: " << dataExchanger->currentStage << std::endl;
     fill_stage_tab_data();
 }
 
@@ -61,14 +64,17 @@ void stage_edit::reload()
 
 void stage_edit::fill_stage_tab_data()
 {
+    std::cout << "#B - STAGE_N: " << dataExchanger->currentStage << std::endl;
     _data_loading = true;
     QListWidgetItem item_empty;
     item_empty.setText("");
 	std::string filename = FILEPATH + "/data/images/empty.png";
 	QPixmap image(filename.c_str());
-	image = image.copy(0, 0, image.width(), image.height());
-	image = image.scaled(32, 32);
-    item_empty.setIcon(image);
+    if (image.isNull() == false && image.width() > 0) {
+        image = image.copy(0, 0, image.width(), image.height());
+        image = image.scaled(32, 32);
+        item_empty.setIcon(image);
+    }
 
 	dataExchanger->current_player = 0;
 
@@ -97,11 +103,13 @@ void stage_edit::update_stage_data()
     if (dataExchanger->currentStage < 0) {
         return;
     }
+    std::cout << "#1 - STAGE_N: " << dataExchanger->currentStage << std::endl;
+
 	// SET ITEMS
     ui->stages_tab_stage_name_lineedit->setText(stage_data.stages[dataExchanger->currentStage].name);
     ui->stages_tab_bossname_lineedit->setText(stage_data.stages[dataExchanger->currentStage].boss.name);
     int combo_n = ui->stages_tab_bgmusic_combo->findText(QString(stage_data.stages[dataExchanger->currentStage].bgmusic_filename));
-    std::cout << "&&&&& currentStage: " << dataExchanger->currentStage << ", music-file: '" << stage_data.stages[dataExchanger->currentStage].bgmusic_filename << "'', combo_n: " << combo_n << std::endl;
+    //std::cout << "&&&&& currentStage: " << dataExchanger->currentStage << ", music-file: '" << stage_data.stages[dataExchanger->currentStage].bgmusic_filename << "'', combo_n: " << combo_n << std::endl;
     ui->stages_tab_bgmusic_combo->setCurrentIndex(combo_n);
     //ui->dialogs_line1_face->setCurrentIndex(ui->dialogs_line1_face->findText(QString(stage_data.stages[dataExchanger->currentStage].intro_dialog.face_graphics_filename)));
 
@@ -163,6 +171,7 @@ void stage_edit::update_stage_data()
 void stage_edit::on_stages_tab_stage_combo_currentIndexChanged(int index)
 {
     if (_data_loading == true) return;
+    std::cout << "#2 - STAGE_N: " << index << std::endl;
 	dataExchanger->currentStage = index;
 	update_stage_data();
 }
@@ -357,5 +366,7 @@ void stage_edit::on_dialogs_line1_face_combo_currentIndexChanged(const QString &
 void stage_edit::on_bossface_comboBox_currentIndexChanged(const QString &arg1)
 {
     if (_data_loading == true) return;
+
+    sprintf(game_data.stage_face_filename[dataExchanger->currentStage], "%s", arg1.toStdString().c_str()); // this is used to have faces without loading the whole stage
     sprintf(stage_data.stages[dataExchanger->currentStage].boss.face_graphics_filename, "%s", arg1.toStdString().c_str());
 }

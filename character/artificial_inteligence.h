@@ -188,7 +188,7 @@ protected:
      * @param n
      * @param invert_direction
      */
-    void execute_ai_action_trow_projectile(unsigned short n, bool invert_direction);
+    void execute_ai_action_trow_projectile(Uint8 n, bool invert_direction);
 
     /**
      * @brief
@@ -246,10 +246,10 @@ protected:
     static std::vector<character*> *player_list;					// reference to the players list /**< TODO */
     int IA_type;										// IA types: no_move, wait, attack, zig-zag (loop), side to side (origin to direction) /**< TODO */
     unsigned int _ai_timer;										// used to not execute AI before a while /**< TODO */
-    unsigned short _ai_chain_n;							// indicates witch one of the four AI actions is the NPC on /**< TODO */
-    unsigned short _ghost_move_speed_reducer;           // some NPCs walk slowly when throught walls
+    short _ai_chain_n;							// indicates witch one of the four AI actions is the NPC on /**< TODO */
+    short _ghost_move_speed_reducer;           // some NPCs walk slowly when throught walls
     struct st_position start_point; /**< TODO */
-    bool _auto_respawn;                                 // do not need to be out of screen to respawn
+    int _auto_respawn_timer;                            // used to check if enought time has passed to auto-respawn
 
     trajectory_parabola *_trajectory_parabola;          // used for jumping to a specific point
     bool _did_shot;                                         // used to avoid shooting multiple times
@@ -263,6 +263,7 @@ protected:
     int _counter;                                       // used for counting times, such as how many shots were fired
     int _current_ai_type;                               // holds the current AI type, can be changed to another one if needed (as jumping over obstacles)
     int _ai_id;                                         // holds the ID of the AI the NPC uses
+    bool _show_reset_stand;
 };
 
 #endif // ARTIFICIAL_INTELIGENCE_H

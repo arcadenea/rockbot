@@ -32,7 +32,7 @@ void game_properties_tab::fill_data()
     // set values/positions
     ui->special_item1_combo->setCurrentIndex(game_data.player_items[0]);
     ui->special_item2_combo->setCurrentIndex(game_data.player_items[1]);
-    ui->semicharged_shot_combo->setCurrentIndex(game_data.semi_charged_projectile_id);
+    ui->semicharged_shot_combo->setCurrentIndex(game_data.semi_charged_projectile_id+1);
     int combo_n = ui->stagefaces_face_combo->findText(QString(game_data.stage_face_filename[_current_stage]));
     std::cout << "combo_n: " << combo_n << ", stage_filename[" << _current_stage << "]: " << game_data.stage_face_filename[_current_stage] << std::endl;
     ui->stagefaces_face_combo->setCurrentIndex(combo_n);
@@ -56,7 +56,7 @@ void game_properties_tab::on_special_item2_combo_currentIndexChanged(int index)
 void game_properties_tab::on_semicharged_shot_combo_currentIndexChanged(int index)
 {
     if (_data_loading == true) return;
-    game_data.semi_charged_projectile_id = index;
+    game_data.semi_charged_projectile_id = index-1;
 }
 
 void game_properties_tab::on_stagefaces_stage_combo_currentIndexChanged(int index)

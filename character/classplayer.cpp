@@ -19,6 +19,10 @@ extern CURRENT_FILE_FORMAT::st_save game_save;
 
 extern FREEZE_EFFECT_TYPES freeze_weapon_effect;
 
+#define PLAYER_MOVE_SPEED_INT_PART 2 // higher is faster
+#define PLAYER_MOVE_SPEED_FLOAT_PART 4 // lower is faster
+
+
 #include "classmap.h"
 
 // ********************************************************************************************** //
@@ -26,12 +30,16 @@ extern FREEZE_EFFECT_TYPES freeze_weapon_effect;
 // ********************************************************************************************** //
 classPlayer::classPlayer(std::string set_name, int playerNumber) : teleporter_n(-1), selected_weapon(WEAPON_DEFAULT), l_key_released(true), r_key_released(true)
 {
-	_number = playerNumber-1;
+    _number = playerNumber;
+    if (_number == 3 || _number == 0) {
+        _obj_jump.set_jump_acceleration(0.95);
+        _obj_jump.set_jump_limit(50);
+    }
 	max_projectiles = game_data.players[_number].max_shots;
-    //std::cout << "classPlayer::classPlayer - max_projectiles: " << max_projectiles << std::endl;
-	position.y = -TILESIZE;
+    std::cout << "###### classPlayer::classPlayer[" << _number << "] - max_projectiles: " << max_projectiles << std::endl;
+    position.y = -TILESIZE;
 	position.x = 80;
-	hit_duration = 2500;
+    hit_duration = 2000;
 	//hitPoints.total = game_data.players[_number].HP;
 	hitPoints.total = PLAYER_INITIAL_HP;
 	hitPoints.current = hitPoints.total;
@@ -44,28 +52,22 @@ classPlayer::classPlayer(std::string set_name, int playerNumber) : teleporter_n(
 	if (game_data.players[_number].can_slide == true) {
 		slide_type = 1;
 	}
-    _jump_accel = game_data.players[_number].jump_gravity;
-    move_speed = game_data.players[_number].move_speed/10;
+    move_speed = PLAYER_MOVE_SPEED_INT_PART;
+    _fractional_move_speed = PLAYER_MOVE_SPEED_FLOAT_PART;
 
-    double temp_move_speed = game_data.players[_number].move_speed;
-    temp_move_speed = temp_move_speed / 10;
-    double intpart;
-    double fractpart = modf(temp_move_speed , &intpart);
-
-
-    if (fractpart > 0) { // calculates how many frames we need to give an extra pixel movement
-        _fractional_move_speed = 1/fractpart;
-    }
-
-    std::cout << ">>>>>>>>>>>>> move_speed: " << move_speed << ", fractpart: " << fractpart << ", _fractional_move_speed: " << _fractional_move_speed << std::endl;
-
-    _touch_damage_reductor = game_data.players[_number].touch_damage_reduction;
-    if (_touch_damage_reductor > 0) {
-        _hit_move_back_dist = TILESIZE;
-    }
     _charged_shot_projectile_id = game_data.players[_number].full_charged_projectile_id;
-    //std::cout << "Player[" << name << "].jump_gravity: " << _jump_accel << std::endl;
+
+    //std::cout << ">>> p[" << _number << "]._charged_shot_projectile_id: " << _charged_shot_projectile_id << std::endl;
+
     _simultaneous_shots = game_data.players[_number].simultaneous_shots;
+    //std::cout << "classjump::set_acceleration - player[" << name << "], accel[" << game_data.players[_number].jump_gravity << "]" << std::endl;
+    if (can_double_jump() == true) {
+        _jumps_number = 2;
+    } else {
+        _jumps_number = 1;
+    }
+    _damage_modifier = game_data.players[_number].damage_modifier;
+    update_armor_properties();
 }
 
 
@@ -81,6 +83,9 @@ void classPlayer::init_weapon_colors()
 
 bool classPlayer::get_item(object_colision &obj_info)
 {
+    if (state.animation_type == ANIM_TYPE_TELEPORT) {
+        return false;
+    }
 	if (character::get_item(obj_info)) {
 		return true;
 	}
@@ -91,7 +96,7 @@ bool classPlayer::get_item(object_colision &obj_info)
 		//std::cout << "classPlayer::get_item" << std::endl;
 		switch (obj_info._object->get_type()) {
 		case OBJ_ENERGY_TANK:
-            if (game_save.items.energy_tanks < 9) {
+            if (game_save.items.energy_tanks < 9) { // max 9
                 game_save.items.energy_tanks++;
             }
 			obj_info._object->set_finished(true);
@@ -99,14 +104,18 @@ bool classPlayer::get_item(object_colision &obj_info)
             res = true;
 			break;
 		case OBJ_WEAPON_TANK:
-            if (game_save.items.weapon_tanks == 0) {
-                game_save.items.weapon_tanks++;
-            }
+            game_save.items.weapon_tanks = 1; // max 1
 			obj_info._object->set_finished(true);
 			soundManager.play_sfx(SFX_GOT_ITEM);
             res = true;
 			break;
-		case OBJ_LIFE:
+        case OBJ_SPECIAL_TANK:
+            game_save.items.special_tanks = 1; // max 1
+            obj_info._object->set_finished(true);
+            soundManager.play_sfx(SFX_GOT_ITEM);
+            res = true;
+            break;
+        case OBJ_LIFE:
             game_save.items.lifes++;
             if (game_save.items.lifes > 9) {
                 game_save.items.lifes = 9;
@@ -125,7 +134,31 @@ bool classPlayer::get_item(object_colision &obj_info)
 			recharge(ENERGY_TYPE_WEAPON, ENERGY_ITEM_SMALL);
             res = true;
 			break;
-		default:
+        case OBJ_ARMOR_ARMS:
+            obj_info._object->set_finished(true);
+            soundManager.play_sfx(SFX_GOT_ITEM);
+            game_save.armor_pieces[ARMOR_ARMS] = true;
+            show();
+            gameControl.showGotArmorDialog(ARMOR_ARMS);
+            update_armor_properties();
+            break;
+        case OBJ_ARMOR_BODY:
+            obj_info._object->set_finished(true);
+            soundManager.play_sfx(SFX_GOT_ITEM);
+            game_save.armor_pieces[ARMOR_BODY] = true;
+            show();
+            gameControl.showGotArmorDialog(ARMOR_BODY);
+            update_armor_properties();
+            break;
+        case OBJ_ARMOR_LEGS:
+            obj_info._object->set_finished(true);
+            soundManager.play_sfx(SFX_GOT_ITEM);
+            game_save.armor_pieces[ARMOR_LEGS] = true;
+            show();
+            gameControl.showGotArmorDialog(ARMOR_LEGS);
+            update_armor_properties();
+            break;
+        default:
 			//std::cout << "classPlayer::get_item - unknown item type: " << obj_info._object->get_type() << std::endl;
 			break;
 		}
@@ -152,47 +185,149 @@ void classPlayer::recharge(e_energy_types _en_type, int value)
 	}
 }
 
+
+bool classPlayer::shoryuken()
+{
+    // trying to start command (can only start if standing)
+
+    //std::cout << ">> SHOURYUKEN - up: " << moveCommands.up << ", dash: " << moveCommands.dash << ", jump: " << moveCommands.jump << std::endl;
+
+    if (moveCommands.up != 0 && moveCommands.dash != 0 && state.animation_type == ANIM_TYPE_STAND)  {
+        state.animation_type = ANIM_TYPE_SPECIAL_ATTACK;
+        std::cout << ">>>>>>>>>>>>>>>>>>>> SHORYUKEN::START" << std::endl;
+        soundManager.play_sfx(SFX_SHORYUKEN_GIRL);
+        _obj_jump.start(true);
+        return true;
+    // is executing
+    } else if (state.animation_type == ANIM_TYPE_SPECIAL_ATTACK) {
+        std::cout << ">>>>>>>>>>>>>>>>>>>> SHORYUKEN::EXECUTE" << std::endl;
+        //position.y -= move_speed;
+        _obj_jump.execute();
+        int jump_speed = _obj_jump.get_speed();
+        bool jump_moved = false;
+
+        // check collision
+        for (int i=abs((float)jump_speed); i>0; i--) {
+            int speed_y = 0;
+            if (jump_speed > 0) {
+                speed_y = i;
+            } else {
+                speed_y = i*-1;
+            }
+            st_map_colision map_col = map_colision(0, speed_y, map->getMapScrolling());
+            int map_lock = map_col.block;
+            //std::cout << "jump::check_collision - i[" << i << "], map_lock["  << map_lock << "]" << std::endl;
+
+            if (map_lock == BLOCK_UNBLOCKED || map_lock == BLOCK_WATER) {
+                //std::cout << "jump.speed[" << speed_y << "]" << std::endl;
+                position.y += speed_y;
+                jump_moved = true;
+                break;
+            }
+        }
+        if (jump_speed != 0 && jump_moved == false) {
+            //std::cout << "chat::jump - must interrupt because a collision happened" << std::endl;
+            if (jump_speed < 0) {
+                _obj_jump.interrupt();
+            } else {
+                _obj_jump.finish();
+                state.animation_type = ANIM_TYPE_STAND;
+            }
+        }
+
+
+
+        if (_obj_jump.is_started() == false) {
+            return false;
+        }
+        return true;
+    }
+    return false;
+}
+
+void classPlayer::consume_weapon(int value)
+{
+    if (game_save.items.weapons[selected_weapon] - value < 0) {
+        game_save.items.weapons[selected_weapon] = 0;
+    } else {
+        game_save.items.weapons[selected_weapon] -= value;
+    }
+}
+
+
 void classPlayer::attack(bool dont_update_colors)
 {
     UNUSED(dont_update_colors);
-	st_position proj_pos;
+    st_position proj_pos;
 
-	if (selected_weapon == WEAPON_DEFAULT) {
-		character::attack();
-		return;
+
+    //std::cout << ">> classPlayer::attack() - selected_weapon: " << selected_weapon << std::endl;
+
+
+    if (state.animation_type == ANIM_TYPE_HIT) { // can't fire when hit
+        return;
+    }
+
+    if (get_projectile_max_shots() <= projectile_list.size()) {
+        return;
+    }
+
+    bool auto_charged = false;
+    if (game_save.armor_pieces[ARMOR_ARMS] == true && game_data.armor_pieces[ARMOR_ARMS].special_ability[_number] == ARMOR_ABILITY_ARMS_ALWAYSCHARGED) {
+        auto_charged = true;
+    }
+
+    if (selected_weapon == WEAPON_DEFAULT) {
+        /// @NOTE: desabilitei o tiro em diagonal pois vai precisar mudanças no sistema de arquivos para ocmportar as poses/frames
+        /// de ataque para cima e para baixo
+        //std::cout << ">> classPlayer::attack() - NORMAL" << std::endl;
+        bool is_on_ground = hit_ground();
+        if (can_shoot_diagonal() == true && moveCommands.up != 0 && is_on_ground == true) {
+            character::attack(false, 1, auto_charged);
+        } else if (can_shoot_diagonal() == true && moveCommands.down != 0 && is_on_ground == true) {
+            character::attack(false, -1, auto_charged);
+        } else {
+            character::attack(false, 0, auto_charged);
+        }
+        return;
     } else if (game_save.items.weapons[selected_weapon] <= 0) {
-		std::cout << "invalid weapon" << std::endl;
-		return;
-	}
+        std::cout << "invalid weapon" << std::endl;
+        return;
+    }
 
-	if (moveCommands.attack == 0 && attack_button_released == false) {
-		attack_button_released = true;
-		return;
-	}
+    if (moveCommands.attack == 0 && attack_button_released == false) {
+        attack_button_released = true;
+        return;
+    }
 
     int effect_type = is_executing_effect_weapon();
     int used_weapon = selected_weapon;
     if (effect_type == TRAJECTORY_FREEZE) { // freeze can shoot normal projectiles
         if (max_projectiles > get_projectile_count()) {
             //std::cout << "TRAJECTORY_FREEZE weapon detected!" << std::endl;
-            character::attack(true);
+            character::attack(true, 0, auto_charged);
         }
         return;
     } else if (effect_type != -1) {
+        if (moveCommands.attack != 0 && (timer.getTimer()-state.attack_timer) > 100 && attack_button_released == true) {
+            //std::cout << ">> classPlayer::attack() - already using an effect weapon" << std::endl;
+            inc_effect_weapon_status(); // this method have a filter to inc only the types that are effect (centered, bomb, etc)
+        }
         return;
     }
-	if (max_projectiles <= get_projectile_count()) {
-        std::cout << "attack - projectile limit reached - max_projectiles: " << max_projectiles << ", projectile_list.size(): " << projectile_list.size() << ", get_projectile_count(): " << get_projectile_count() << std::endl;
-		return;
-	}
+    if (max_projectiles <= get_projectile_count()) {
+        return;
+    }
 
-	if (moveCommands.attack != 0 && (timer.getTimer()-state.attack_timer) > 100 && attack_button_released == true) {
-		attack_button_released = false;
-		if (state.direction == ANIM_DIRECTION_LEFT) {
+    if (moveCommands.attack != 0 && (timer.getTimer()-state.attack_timer) > 100 && attack_button_released == true) {
+        attack_button_released = false;
+
+
+        if (state.direction == ANIM_DIRECTION_LEFT) {
             proj_pos = st_position(position.x, position.y+frameSize.height/2);
-		} else {
+        } else {
             proj_pos = st_position(position.x+frameSize.width-TILESIZE*2, position.y+frameSize.height/2);
-		}
+        }
 
         short int weapon_id = 0;
 
@@ -205,9 +340,18 @@ void classPlayer::attack(bool dont_update_colors)
             weapon_id = used_weapon;
         }
 
-		if (weapon_id == 0) { /// @TODO - this is a temporary exit to handle incomplete weapons
-			return;
-		}
+        if (weapon_id == 0) { /// @TODO - this is a temporary exit to handle incomplete weapons
+            return;
+        }
+
+        // check if projectiles limit from weapon/projectile os not reached
+        if (projectile_list.size() >= game_data.projectiles[game_data.weapons[weapon_id].id_projectile].max_shots) {
+            std::cout << "#### PLAYER::ATTACK - can't shot, weapon number reached ###" << std::endl;
+            return;
+        }
+
+
+        soundManager.play_sfx(SFX_PLAYER_SHOT);
 
         projectile_list.push_back(projectile(game_data.weapons[weapon_id].id_projectile, state.direction, proj_pos, map, is_player()));
         projectile &temp_proj = projectile_list.back();
@@ -221,40 +365,42 @@ void classPlayer::attack(bool dont_update_colors)
         if (weapon_trajectory == TRAJECTORY_CENTERED) {
             temp_proj.set_owner_direction(&state.direction);
             temp_proj.set_owner_position(&position);
+        } else if (weapon_trajectory == TRAJECTORY_CHAIN) {
+            temp_proj.set_owner_position(&position);
+            temp_proj.set_owner_direction(&state.direction);
         } else if (weapon_trajectory == TRAJECTORY_FOLLOW) {
-			classnpc* temp = find_nearest_npc();
-			if (temp != NULL) {
+            classnpc* temp = find_nearest_npc();
+            if (temp != NULL) {
                 //std::cout << "PLAYER::attack - could not find target" << std::endl;
                 temp_proj.set_target_position(temp->get_position_ref());
-			}
-		}
-
-		//std::cout << "Added projectile - id: " << game_data.weapons[weapon_id].id_projectile << std::endl;
-
-		if (selected_weapon != WEAPON_DEFAULT) {
-            if (weapon_trajectory == TRAJECTORY_QUAKE) {
-                game_save.items.weapons[selected_weapon] -= 4;
-            } else if (weapon_trajectory == TRAJECTORY_FREEZE) {
-                game_save.items.weapons[selected_weapon] -= 2;
-            } else {
-                game_save.items.weapons[selected_weapon]--;
             }
+        }
 
-		}
+        //std::cout << "Added projectile - id: " << game_data.weapons[weapon_id].id_projectile << std::endl;
+
+        if (selected_weapon != WEAPON_DEFAULT) {
+            if (weapon_trajectory == TRAJECTORY_QUAKE) {
+                consume_weapon(4);
+            } else if (weapon_trajectory == TRAJECTORY_FREEZE) {
+                consume_weapon(2);
+            } else {
+                consume_weapon(1);
+            }
+        }
 
 
-		attack_state = ATTACK_START;
-		state.attack_timer = timer.getTimer();
-		if (state.animation_type == ANIM_TYPE_STAND) {
+        attack_state = ATTACK_START;
+        state.attack_timer = timer.getTimer();
+        if (state.animation_type == ANIM_TYPE_STAND) {
             set_animation_type(ANIM_TYPE_ATTACK);
-		} else if (state.animation_type == ANIM_TYPE_JUMP) {
+        } else if (state.animation_type == ANIM_TYPE_JUMP) {
             set_animation_type(ANIM_TYPE_JUMP_ATTACK);
-		} else if (state.animation_type == ANIM_TYPE_STAIRS || state.animation_type == ANIM_TYPE_STAIRS_SEMI || state.animation_type == ANIM_TYPE_STAIRS_MOVE) {
+        } else if (state.animation_type == ANIM_TYPE_STAIRS || state.animation_type == ANIM_TYPE_STAIRS_SEMI || state.animation_type == ANIM_TYPE_STAIRS_MOVE) {
             set_animation_type(ANIM_TYPE_STAIRS_ATTACK);
-		} else if (state.animation_type == ANIM_TYPE_WALK) {
+        } else if (state.animation_type == ANIM_TYPE_WALK) {
             set_animation_type(ANIM_TYPE_WALK_ATTACK);
-		}
-	}
+        }
+    }
 }
 
 void classPlayer::damage_ground_npcs()
@@ -262,7 +408,7 @@ void classPlayer::damage_ground_npcs()
 	/// @TODO - this part must be done only ONCE
 	// find quake in projectiles list
 	int projectile_n = -1;
-	for (int i =0; i<MAX_FILE_PROJECTILES; i++) {
+    for (int i =0; i<FS_MAX_PROJECTILES; i++) {
 		if (game_data.projectiles[i].trajectory == TRAJECTORY_QUAKE) {
 			projectile_n = i;
 			break;
@@ -321,7 +467,8 @@ void classPlayer::initFrames()
 
 	graphicsLib_gSurface playerSpriteSurface;
 	std::stringstream filename;
-	filename << FILEPATH << "/data/images/sprites/p" << (_number+1) << ".png";
+    //filename << FILEPATH << "/data/images/sprites/p" << (_number+1) << ".png";
+    filename << FILEPATH << "/data/images/sprites/" << game_data.players[_number].graphic_filename;
 	graphLib.surfaceFromFile(filename.str(), &playerSpriteSurface);
 	if (playerSpriteSurface.gSurface == NULL) {
 		std::cout << "initFrames - Error loading player surface from file\n";
@@ -329,21 +476,19 @@ void classPlayer::initFrames()
 	}
 
 	// STAND
-	addSpriteFrame(ANIM_DIRECTION_RIGHT, ANIM_TYPE_STAND, 3, 0, playerSpriteSurface, 5000);
+    addSpriteFrame(ANIM_DIRECTION_RIGHT, ANIM_TYPE_STAND, 3, 0, playerSpriteSurface, 5000);
 	addSpriteFrame(ANIM_DIRECTION_RIGHT, ANIM_TYPE_STAND, 4, 0, playerSpriteSurface, 150);
-	addSpriteFrame(ANIM_DIRECTION_LEFT, ANIM_TYPE_STAND, 3, 1, playerSpriteSurface, 5000);
+    addSpriteFrame(ANIM_DIRECTION_LEFT, ANIM_TYPE_STAND, 3, 1, playerSpriteSurface, 5000);
 	addSpriteFrame(ANIM_DIRECTION_LEFT, ANIM_TYPE_STAND, 4, 1, playerSpriteSurface, 150);
 	// WALK
-	short walk_frame_duration = 80;
-	if (_number == 0) {
-		walk_frame_duration = 120;
-	}
-	addSpriteFrame(ANIM_DIRECTION_RIGHT, ANIM_TYPE_WALK, 6, 0, playerSpriteSurface, walk_frame_duration);
-	addSpriteFrame(ANIM_DIRECTION_RIGHT, ANIM_TYPE_WALK, 7, 0, playerSpriteSurface, walk_frame_duration);
-	addSpriteFrame(ANIM_DIRECTION_RIGHT, ANIM_TYPE_WALK, 8, 0, playerSpriteSurface, walk_frame_duration);
-	addSpriteFrame(ANIM_DIRECTION_LEFT, ANIM_TYPE_WALK, 6, 1, playerSpriteSurface, walk_frame_duration);
-	addSpriteFrame(ANIM_DIRECTION_LEFT, ANIM_TYPE_WALK, 7, 1, playerSpriteSurface, walk_frame_duration);
-	addSpriteFrame(ANIM_DIRECTION_LEFT, ANIM_TYPE_WALK, 8, 1, playerSpriteSurface, walk_frame_duration);
+    addSpriteFrame(ANIM_DIRECTION_RIGHT, ANIM_TYPE_WALK, 6, 0, playerSpriteSurface, WALK_FRAME_DELAY);
+    addSpriteFrame(ANIM_DIRECTION_RIGHT, ANIM_TYPE_WALK, 7, 0, playerSpriteSurface, WALK_FRAME_DELAY);
+    addSpriteFrame(ANIM_DIRECTION_RIGHT, ANIM_TYPE_WALK, 8, 0, playerSpriteSurface, WALK_FRAME_DELAY);
+    addSpriteFrame(ANIM_DIRECTION_RIGHT, ANIM_TYPE_WALK, 7, 0, playerSpriteSurface, WALK_FRAME_DELAY);
+    addSpriteFrame(ANIM_DIRECTION_LEFT, ANIM_TYPE_WALK, 6, 1, playerSpriteSurface, WALK_FRAME_DELAY);
+    addSpriteFrame(ANIM_DIRECTION_LEFT, ANIM_TYPE_WALK, 7, 1, playerSpriteSurface, WALK_FRAME_DELAY);
+    addSpriteFrame(ANIM_DIRECTION_LEFT, ANIM_TYPE_WALK, 8, 1, playerSpriteSurface, WALK_FRAME_DELAY);
+    addSpriteFrame(ANIM_DIRECTION_LEFT, ANIM_TYPE_WALK, 7, 1, playerSpriteSurface, WALK_FRAME_DELAY);
 	// JUMP
 	addSpriteFrame(ANIM_DIRECTION_RIGHT, ANIM_TYPE_JUMP, 9, 0, playerSpriteSurface, 150);
 	addSpriteFrame(ANIM_DIRECTION_LEFT, ANIM_TYPE_JUMP, 9, 1, playerSpriteSurface, 150);
@@ -393,25 +538,44 @@ void classPlayer::initFrames()
     addSpriteFrame(ANIM_DIRECTION_LEFT, ANIM_TYPE_SLIDE, 20, 1, playerSpriteSurface, 1000);
     addSpriteFrame(ANIM_DIRECTION_RIGHT, ANIM_TYPE_SLIDE, 20, 0, playerSpriteSurface, 1000);
 
+    // throw
+    //addSpriteFrame(ANIM_DIRECTION_LEFT, ANIM_TYPE_THROW, 21, 1, playerSpriteSurface, 1000);
+    //addSpriteFrame(ANIM_DIRECTION_RIGHT, ANIM_TYPE_THROW, 21, 0, playerSpriteSurface, 1000);
+
+
 	// shield
 	addSpriteFrame(ANIM_DIRECTION_LEFT, ANIM_TYPE_SHIELD, 22, 1, playerSpriteSurface, 100);
-	//addSpriteFrame(ANIM_DIRECTION_LEFT, ANIM_TYPE_SHIELD, 21, 1, playerSpriteSurface, 100);
 	addSpriteFrame(ANIM_DIRECTION_RIGHT, ANIM_TYPE_SHIELD, 22, 0, playerSpriteSurface, 100);
-	//addSpriteFrame(ANIM_DIRECTION_RIGHT, ANIM_TYPE_SHIELD, 21, 0, playerSpriteSurface, 100);
 
-	playerSpriteSurface.freeGraphic();
+    // shoot-diagonal-up
+    addSpriteFrame(ANIM_DIRECTION_LEFT, ANIM_TYPE_ATTACK_DIAGONAL_UP, 23, 1, playerSpriteSurface, 100);
+    addSpriteFrame(ANIM_DIRECTION_RIGHT, ANIM_TYPE_ATTACK_DIAGONAL_UP, 23, 0, playerSpriteSurface, 100);
+
+    // shoot-diagonal-down
+    addSpriteFrame(ANIM_DIRECTION_LEFT, ANIM_TYPE_ATTACK_DIAGONAL_DOWN, 24, 1, playerSpriteSurface, 100);
+    addSpriteFrame(ANIM_DIRECTION_RIGHT, ANIM_TYPE_ATTACK_DIAGONAL_DOWN, 24, 0, playerSpriteSurface, 100);
+
+    // special-attack
+    addSpriteFrame(ANIM_DIRECTION_LEFT, ANIM_TYPE_SPECIAL_ATTACK, 25, 1, playerSpriteSurface, 100);
+    addSpriteFrame(ANIM_DIRECTION_RIGHT, ANIM_TYPE_SPECIAL_ATTACK, 25, 0, playerSpriteSurface, 100);
+
+    playerSpriteSurface.freeGraphic();
 }
 
 
 void classPlayer::execute()
 {
-    if (freeze_weapon_effect != FREEZE_EFFECT_PLAYER) {
+    if (freeze_weapon_effect != FREEZE_EFFECT_PLAYER || timer.getTimer() < hit_duration+last_hit_time) {
         move();
     } else {
         clear_move_commands();
         input.clean();
     }
+    if (have_shoryuken() == true && shoryuken() == true) { // while doing shoryuken won't move
+        return;
+    }
     charMove();
+    attack();
 }
 
 void classPlayer::execute_projectiles()
@@ -433,9 +597,7 @@ void classPlayer::execute_projectiles()
         //std::cout << "projectile.move_type: " << (*it)->get_move_type() << std::endl;
 
         /// @TODO projectiles that are tele-guided
-        if ((*it).get_move_type() == TRAJECTORY_CHAIN) {
-            (*it).set_y(position.y+frameSize.height/2);
-        } else if ((*it).get_move_type() == TRAJECTORY_QUAKE) {
+        if ((*it).get_move_type() == TRAJECTORY_QUAKE) {
             damage_ground_npcs();
             continue;
         }
@@ -473,10 +635,6 @@ void classPlayer::execute_projectiles()
                     continue;
                 }
 
-
-
-
-
                 // check if have hit area, and if hit it
                 st_rectangle enemy_hit_area = (*enemy_it)->get_hit_area();
                 st_size enemy_size = (*enemy_it)->get_size();
@@ -505,7 +663,7 @@ void classPlayer::execute_projectiles()
                 //std::cout << ">> player weapon damage #1" << std::endl;
                 //std::cout << "******* (*enemy_it)->is_using_circle_weapon(): " << (*enemy_it)->is_using_circle_weapon() << ", (*it)->get_trajectory(): " << (*it)->get_trajectory() << ", TRAJECTORY_CHAIN: " << TRAJECTORY_CHAIN << std::endl;
                 // NPC using cicrcle weapon, is only be destroyed by CHAIN, but NPC won't take damage
-                if ((*enemy_it)->is_using_circle_weapon() == true ) {
+                if ((*enemy_it)->is_using_circle_weapon() == true) {
                     if ((*it).get_trajectory() == TRAJECTORY_CHAIN) {
                         //std::cout << "PLAYER projectile hit NPC centered-weapon" << std::endl;
                         (*enemy_it)->consume_projectile();
@@ -524,6 +682,24 @@ void classPlayer::execute_projectiles()
                 if ((*it).get_damage() > 0) {
                     (*it).consume_projectile();
                     soundManager.play_sfx(SFX_NPC_HIT);
+                }
+            }
+        }
+
+
+        // if projectile is a bomb, check colision against objects
+        if ((*it).get_effect_n() == 1 && ((*it).get_move_type() == TRAJECTORY_BOMB || (*it).get_move_type() == TRAJECTORY_FALL_BOMB)) {
+            //std::cout << "PLAYER::execute_projectiles - Have exploding bomb, checking objects that collide..." << std::endl;
+            std::vector<object*> res_obj = map->check_collision_with_objects((*it).get_area());
+            if (res_obj.size() > 0) {
+                //std::cout << "PLAYER::execute_projectiles - Found objects (" << res_obj.size() << ") that collides with bomb!" << std::endl;
+                for (int i=0; i<res_obj.size(); i++) {
+                    object* temp_obj = res_obj.at(i);
+                    //std::cout << "PLAYER::execute_projectiles - OBJ[" << temp_obj->get_name() << "].type: " << temp_obj->get_type() << ", OBJ_DESTRUCTIBLE_WALL: " << OBJ_DESTRUCTIBLE_WALL << std::endl;
+                    if (temp_obj->get_type() == OBJ_DESTRUCTIBLE_WALL) {
+                        //std::cout << "PLAYER::execute_projectiles - Found destructible block!!!!" << std::endl;
+                        temp_obj->set_finished(true);
+                    }
                 }
             }
         }
@@ -573,6 +749,15 @@ void classPlayer::move()
 		moveCommands.dash = 0;
 	}
 
+    // players that shoot on diagonal can't move shile attacking
+    if (can_shoot_diagonal()) {
+        if (is_on_attack_frame() && state.animation_type != ANIM_TYPE_JUMP_ATTACK) {
+            //state.animation_type = ANIM_TYPE_ATTACK;
+            moveCommands.left = 0;
+            moveCommands.right = 0;
+        }
+    }
+
 	if (input.p1_input[BTN_L] != 1 && l_key_released == false) {
 		l_key_released = true;
 	}
@@ -608,8 +793,13 @@ void classPlayer::move()
 	// send commands to the platform in special cases
 	if (_platform != NULL) {
 		if (_platform->get_type() == OBJ_ITEM_FLY && timer.getTimer() > _platform->get_timer()) {
-            game_save.items.weapons[selected_weapon]--;
-			_platform->set_timer(timer.getTimer()+240);
+            consume_weapon(1);
+            if (game_save.items.weapons[selected_weapon] == 0) {
+                _platform->set_finished(true);
+                _platform = NULL;
+                return;
+            }
+            _platform->set_timer(timer.getTimer()+240);
 		}
 		//std::cout << ">>> PLAYER SEND COMMAND FOR " << _platform->get_name() << ", type: " << _platform->get_type() << std::endl;
 		if (moveCommands.up == 1) {
@@ -684,12 +874,18 @@ void classPlayer::death()
     map->reset_objects();
     map->print_objects_number();
 	dead = true;
-	state.jump_state = NO_JUMP;
+    _obj_jump.interrupt();
+    _obj_jump.finish();
+    //std::cout << "[[[freeze_weapon_effect(RESET #1)]]]" << std::endl;
     freeze_weapon_effect = FREEZE_EFFECT_NONE;
+    change_player_color(true);
+    set_weapon(WEAPON_DEFAULT);
+    _inertia_obj.stop();
     clear_move_commands();
 	input.clean();
 	state.direction = ANIM_DIRECTION_RIGHT;
-	gameControl.draw_explosion(realPosition.x, realPosition.y, false);
+    gameControl.remove_current_teleporter_from_list();
+    gameControl.draw_explosion(realPosition.x, realPosition.y, false);
     if (game_save.items.lifes == 0) {
         game_save.items.lifes = 3;
         std::cout << "GAME OVER" << std::endl;
@@ -712,7 +908,7 @@ void classPlayer::change_player_color(bool full_change)
 		graphLib.change_surface_color(color_keys[0], weapon_colors[selected_weapon].color2, &(character_graphics_list.find(name)->second)[state.direction][state.animation_type][state.animation_state].frameSurface);
 		graphLib.change_surface_color(color_keys[0], weapon_colors[selected_weapon].color3, &(character_graphics_list.find(name)->second)[state.direction][state.animation_type][state.animation_state].frameSurface);
 	} else {
-		for (int i=0; i<ANIM_DIRECTION_COUNT; i++) {
+        for (int i=0; i<CHAR_ANIM_DIRECTION_COUNT; i++) {
 			for (int j=0; j<ANIM_TYPE_COUNT; j++) {
 				for (int k=0; k<ANIM_FRAMES_COUNT; k++) {
 					if (weapon_colors[selected_weapon].color1.r != -1) {
@@ -728,7 +924,7 @@ void classPlayer::change_player_color(bool full_change)
 			}
 		}
 	}
-	//static std::map<std::string, st_spriteFrame[ANIM_DIRECTION_COUNT][ANIM_TYPE_COUNT][ANIM_FRAMES_COUNT]> character_graphics_list;
+    //static std::map<std::string, st_spriteFrame[CHAR_ANIM_DIRECTION_COUNT][ANIM_TYPE_COUNT][ANIM_FRAMES_COUNT]> character_graphics_list;
 
 }
 
@@ -746,14 +942,14 @@ short classPlayer::get_weapon_value(int weapon_n)
     return game_save.items.weapons[weapon_n];
 }
 
-void classPlayer::set_weapon_value(unsigned short weapon_n, unsigned short int value)
+void classPlayer::set_weapon_value(Uint8 weapon_n, Uint8 value)
 {
     game_save.items.weapons[weapon_n] = value;
 }
 
 
 
-format_v2_0::file_weapon_colors classPlayer::get_weapon_colors(short int weapon_n)
+CURRENT_FILE_FORMAT::file_weapon_colors classPlayer::get_weapon_colors(short int weapon_n)
 {
 	return weapon_colors[weapon_n];
 }
@@ -772,7 +968,7 @@ void classPlayer::refill_weapons()
 
 void classPlayer::set_teleport_minimal_y(int y)
 {
-    //std::cout << "PLAYER::set_teleport_minimal_y::y: " << y << std::endl;
+    std::cout << "######### classPlayer::set_teleport_minimal_y - y: " << y << std::endl;
     _teleport_minimal_y = y;
 }
 
@@ -784,7 +980,7 @@ bool classPlayer::can_fly()
 
 void classPlayer::add_coil_object()
 {
-    if (map->have_player_object() == true) {
+    if (map->have_player_object() == true) { // check if any other special item is present on screen
         return;
     }
     if (game_save.items.weapons[selected_weapon] > 0) {
@@ -797,15 +993,15 @@ void classPlayer::add_coil_object()
             obj_pos.x = position.x + frameSize.width + 2;
 		}
 
-        object temp_obj(game_data.player_items[0], this->map, st_position(position.x/TILESIZE, position.y/TILESIZE)); /// @TODO - remove hardcoded number
+        object temp_obj(game_data.player_items[0], this->map, st_position(position.x/TILESIZE, position.y/TILESIZE), st_position(-1, -1), -1); /// @TODO - remove hardcoded number
         temp_obj.set_precise_position(obj_pos, state.direction);
 		temp_obj.set_duration(2500);
         temp_obj.use_teleport_in_out();
         temp_obj.set_colision_mode(COLISION_MODE_Y);
         temp_obj.set_direction(state.direction);
 		map->add_object(temp_obj);
-        game_save.items.weapons[selected_weapon]--;
-	}
+        consume_weapon(1);
+    }
 }
 
 void classPlayer::add_jet_object()
@@ -822,7 +1018,7 @@ void classPlayer::add_jet_object()
         } else {
             obj_pos.x = position.x + frameSize.width + 2;
         }
-        object temp_obj(game_data.player_items[1], this->map, st_position(position.x/TILESIZE, position.y/TILESIZE));
+        object temp_obj(game_data.player_items[1], this->map, st_position(position.x/TILESIZE, position.y/TILESIZE), st_position(-1, -1), -1);
         temp_obj.set_precise_position(obj_pos, state.direction);
         temp_obj.use_teleport_in_out();
 		temp_obj.set_duration(4500);
@@ -837,7 +1033,7 @@ classnpc *classPlayer::find_nearest_npc()
 	classnpc* ret = NULL;
     std::vector<classnpc*>::iterator enemy_it;
 
-	for (enemy_it=map->_npc_list.begin(); enemy_it != map->_npc_list.end(); enemy_it++) {
+    for (enemy_it=map->_npc_list.begin(); enemy_it != map->_npc_list.end(); enemy_it++) {
         if ((*enemy_it)->is_on_visible_screen() == false) {
 			continue;
 		}
@@ -845,16 +1041,18 @@ classnpc *classPlayer::find_nearest_npc()
             continue;
         }
 
-        st_position npc_pos((*enemy_it)->getPosition().x, (*enemy_it)->getPosition().y);
+        st_position npc_pos((*enemy_it)->getPosition().x*TILESIZE, (*enemy_it)->getPosition().y*TILESIZE);
 		npc_pos.x = (npc_pos.x + (*enemy_it)->get_size().width/2)/TILESIZE;
         npc_pos.y = (npc_pos.y + (*enemy_it)->get_size().height)/TILESIZE;
-		int dist = sqrt(pow((float)(position.x - npc_pos.x), (float)2) + pow((float)(position.y - npc_pos.y ), (float)2));
-		if (dist < lower_dist) {
+
+        // pitagoras: raiz[ (x2-x1)^2 + (y2-y1)^2 ]
+        int dist = sqrt(pow((float)(position.x - npc_pos.x), (float)2) + pow((float)(position.y - npc_pos.y ), (float)2));
+        if (dist < lower_dist) {
             //std::cout << "PLAYER::find_nearest_npc - found NPC[" << (*enemy_it)->getName() << "], dist: " << dist << std::endl;
-			lower_dist = dist;
+            lower_dist = dist;
 			ret = (*enemy_it);
-		}
-	}
+        }
+    }
 	return ret;
 }
 
@@ -890,7 +1088,106 @@ void classPlayer::clean_move_commands()
     moveCommands.up = 0;
 }
 
+bool classPlayer::can_shoot_diagonal()
+{
+    if (game_data.players[_number].can_shot_diagonal) {
+        return true;
+    }
+    // armor-pieces checking
 
+
+    return false;
+}
+
+bool classPlayer::can_double_jump()
+{
+    if (game_data.players[_number].can_double_jump) {
+        return true;
+    }
+    // -------------------- armor-pieces checking -------------------- //
+    if (game_save.armor_pieces[ARMOR_LEGS] == true && game_data.armor_pieces[ARMOR_LEGS].special_ability[_number] == ARMOR_ABILITY_LEGS_DOUBLEJUMP) {
+        return true;
+    }
+    return false;
+}
+
+bool classPlayer::can_air_dash()
+{
+    if (game_data.players[_number].can_air_dash == true) {
+        return true;
+    }
+
+    if (game_save.armor_pieces[ARMOR_LEGS] == true && game_data.armor_pieces[ARMOR_LEGS].special_ability[_number] == ARMOR_ABILITY_LEGS_AIRDASH) {
+        return true;
+    }
+    return false;
+}
+
+void classPlayer::damage(unsigned int damage_points, bool ignore_hit_timer)
+{
+    int new_damage_points = damage_points;
+    if (game_save.armor_pieces[ARMOR_BODY] == true && game_data.armor_pieces[ARMOR_BODY].special_ability[_number] == ARMOR_ABILITY_BODY_HALFDAMAGE) {
+        new_damage_points = damage_points/2;
+        if (damage_points > 0 && new_damage_points <= 0) {
+            new_damage_points = 1;
+        }
+        character::damage(new_damage_points, ignore_hit_timer);
+        return;
+    }
+    if (damage_points == SPIKES_DAMAGE && game_save.armor_pieces[ARMOR_BODY] == true && game_data.armor_pieces[ARMOR_BODY].special_ability[_number] == ARMOR_ABILITY_BODY_SPIKESIMMMUNE) {
+        return;
+    }
+    character::damage(damage_points, ignore_hit_timer);
+}
+
+int classPlayer::get_hit_push_back_n()
+{
+    if (game_save.armor_pieces[ARMOR_BODY] == true && game_data.armor_pieces[ARMOR_BODY].special_ability[_number] == ARMOR_ABILITY_BODY_NOPUSHBACK) {
+        return 0;
+    } else {
+        return character::get_hit_push_back_n();
+    }
+}
+
+bool classPlayer::have_super_shot()
+{
+    if (game_save.armor_pieces[ARMOR_ARMS] == true && game_data.armor_pieces[ARMOR_ARMS].special_ability[_number] == ARMOR_ABILITY_ARMS_SUPERSHOT) {
+        return true;
+    }
+    return false;
+}
+
+bool classPlayer::have_laser_shot()
+{
+    if (game_save.armor_pieces[ARMOR_ARMS] == true && game_data.armor_pieces[ARMOR_ARMS].special_ability[_number] == ARMOR_ABILITY_ARMS_LASERBEAM) {
+        return true;
+    }
+    return false;
+}
+
+bool classPlayer::have_shoryuken()
+{
+    if (game_save.armor_pieces[ARMOR_LEGS] == true && game_data.armor_pieces[ARMOR_LEGS].special_ability[_number] == ARMOR_ABILITY_LEGS_SHORYUKEN) {
+        return true;
+    }
+    return false;
+}
+
+void classPlayer::update_armor_properties()
+{
+    if (can_double_jump() == true && _jumps_number == 1) {
+        _jumps_number = 2;
+    }
+    if (game_save.armor_pieces[ARMOR_BODY] == true && game_data.armor_pieces[ARMOR_BODY].special_ability[_number] == ARMOR_ABILITY_BODY_EXTENDEDIMMUNITY) {
+        hit_duration = 4000;
+    }
+    if (have_laser_shot() == true) {
+        _charged_shot_projectile_id = 21;
+    }
+    if (game_save.armor_pieces[ARMOR_ARMS] == true && game_data.armor_pieces[ARMOR_ARMS].special_ability[_number] == ARMOR_ABILITY_ARMS_MISSILE) {
+        _charged_shot_projectile_id = 22;
+    }
+}
 
 
 void classPlayer::reset_charging_shot()
@@ -913,4 +1210,13 @@ void classPlayer::reset_charging_shot()
         state.slide_distance = 0;
     }
 }
+
+bool classPlayer::is_teleporting()
+{
+    if (state.animation_type == ANIM_TYPE_TELEPORT) {
+        return true;
+    }
+    return false;
+}
+
 

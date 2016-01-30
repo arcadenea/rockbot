@@ -44,9 +44,8 @@ extern graphicsLib_gSurface _explosion_surface;
 #include "class_config.h"
 
 
-graphicsLib::graphicsLib() : _show_stars(false), game_screen(NULL), _explosion_animation_timer(0), _explosion_animation_pos(0), _must_set_colors(true)
+graphicsLib::graphicsLib() : _show_stars(false), game_screen(NULL), _explosion_animation_timer(0), _explosion_animation_pos(0), _must_set_colors(true), _timer(0)
 {
-	_screen_lock = SDL_CreateMutex();
 
 	tileset = NULL;
 	stars_timer = 0;
@@ -254,9 +253,9 @@ graphicsLib::graphicsLib() : _show_stars(false), game_screen(NULL), _explosion_a
     colormap[66].g = 255;
     colormap[66].b = 255;
     // colorkey (transparent)
-    colormap[67].r = 123;
-    colormap[67].g = 123;
-    colormap[67].b = 123;
+    colormap[67].r = COLORKEY_R;
+    colormap[67].g = COLORKEY_G;
+    colormap[67].b = COLORKEY_B;
 
 	for (int i=0; i<COLOR_COUNT; i++) {
 		colormap_original[i] = colormap[i];
@@ -274,18 +273,10 @@ graphicsLib::graphicsLib() : _show_stars(false), game_screen(NULL), _explosion_a
 	RES_DIFF_W = 0;
 	RES_DIFF_H = 0;
     _debug_msg_pos = 0;
-    _timer = timer.getTimer();
 }
 
 graphicsLib::~graphicsLib()
 {
-    /*
-    gameScreen.freeGraphic();
-    ingame_menu.freeGraphic();
-	config_menu.freeGraphic();
-	dialog_surface.freeGraphic();
-    _btn_a_surface.freeGraphic();
-    */
 }
 
 
@@ -293,7 +284,6 @@ bool graphicsLib::initGraphics()
 {
 	string filename;
     _video_filter = game_config.video_filter;
-    std::cout << ">>> GRAPHLIB::init - _video_filter: " << _video_filter << std::endl; std::fflush(stdout);
 
 #ifdef DREAMCAST
     if (SDL_Init(SDL_INIT_VIDEO|SDL_INIT_JOYSTICK|SDL_INIT_TIMER) < 0 ) {
@@ -311,14 +301,17 @@ bool graphicsLib::initGraphics()
 		exit(-1);
     }
 #endif
-    std::cout << ">>> GRAPHLIB::init DEBUG #1 <<<" << std::endl; std::fflush(stdout);
 	atexit(SDL_Quit);
 
 
     printf("INFO: There are %d joysticks attached\n", SDL_NumJoysticks());
+#if defined(PLAYSTATION2) || defined(WII)
+    if (SDL_NumJoysticks() <= 0) {
+        std::cout << "No joysticks found" << std::endl;
+        exit(-1);
+    }
+#endif
 	input.init_joystick();
-    std::cout << ">>> GRAPHLIB::init DEBUG #2 <<<" << std::endl; std::fflush(stdout);
-
 	// FONT
 	TTF_Init();
 	filename = FILEPATH + "data/fonts/pressstart2p.ttf";
@@ -338,11 +331,22 @@ bool graphicsLib::initGraphics()
 
 	// GAME SCREEN
 	SDL_ShowCursor( SDL_DISABLE );
-
-
+#ifdef PC
+    SDL_WM_SetCaption("Rockbot Game", "Rockbot Game");
+#endif
     set_video_mode();
-
-
+#ifdef PC
+    std::string icon_filename = FILEPATH + "data/images/faces/rockbot.png";
+    SDL_RWops *rwop = SDL_RWFromFile(icon_filename.c_str(), "rb");
+    if (rwop) {
+        SDL_Surface* icon_img = IMG_Load_RW(rwop, 1);
+        if (icon_img != NULL) {
+            SDL_WM_SetIcon(icon_img, NULL);
+        }
+    } else {
+        std::cout << "rwop is NULL " << std::endl;
+    }
+#endif
 	// other loading methods
 
 
@@ -360,24 +364,22 @@ void graphicsLib::preload()
 
 void graphicsLib::updateScreen()
 {
+    unsigned int now_timer = timer.getTimer() ;
 
-#ifdef DREAMCAST
-    if (timer.getTimer() - _timer < 34) {
+    //std::cout << "graphicsLib::updateScreen - now_timer: " << now_timer << ", " << _timer << ", total(<20): " << now_timer - _timer << std::endl;
+
+    /*
+    if (now_timer - _timer < 20) {
         return;
     }
-#else
-    if (timer.getTimer() - _timer < 20) {
-        return;
-    }
-#endif
     _timer = timer.getTimer();
+    */
 
 
 	if (!game_screen) {
         std::cout << "FATAL-ERROR::updateScreen game_screen is NULL\n";
 		return;
     }
-    SDL_mutexP(_screen_lock);
 
 
     if (_show_stars == true) {
@@ -402,11 +404,8 @@ void graphicsLib::updateScreen()
         //std::cout << "GRAPH::updateScreen NO SCALE" << std::endl;
         if (_must_set_colors == true) {
             //std::cout << "** graphicsLib::updateScreen - _must_set_colors(TRUE) **" << std::endl;
-            SDL_SetColors(game_screen, colormap, 0, COLOR_COUNT);
-            SDL_SetColors(tileset, colormap, 0, COLOR_COUNT);
-            if (tileset_beaten != NULL) {
-                SDL_SetColors(tileset_beaten, colormap, 0, COLOR_COUNT);
-            }
+            update_surface_colormap(game_screen, colormap);
+            update_surface_colormap(tileset, colormap);
             _must_set_colors = false;
         }
         SDL_Flip(game_screen);
@@ -420,15 +419,11 @@ void graphicsLib::updateScreen()
             copySDLArea(st_rectangle(0, 0, RES_W, RES_H), st_position(0, 0), game_screen, game_screen_scaled, true);
         }
         if (_must_set_colors == true) {
-            SDL_SetColors(tileset, colormap, 0, COLOR_COUNT);
-            if (tileset_beaten != NULL) {
-                SDL_SetColors(tileset_beaten, colormap, 0, COLOR_COUNT);
-            }
+            update_surface_colormap(tileset, colormap);
             _must_set_colors = false;
         }
         SDL_Flip(game_screen_scaled);
     }
-    SDL_mutexV(_screen_lock);
 }
 
 
@@ -438,26 +433,28 @@ SDL_Surface *graphicsLib::SDLSurfaceFromFile(string filename)
 	SDL_RWops *rwop;
 	SDL_Surface *spriteCopy;
 	SDL_Surface *display_surface;
-    //char *buffer = new char[filename.size()+1];
 
-    //strcpy(buffer, filename.c_str());
-    //sprintf(buffer, "%s", filename.c_str());
     rwop=SDL_RWFromFile(filename.c_str(), "rb");
-    //delete[] buffer;
 
-	if (!rwop) {
+    if (!rwop) {
         std::cout << "DEBUG.loadSpriteFile - Error in graphicsLib::SDLSurfaceFromFile - file '" << filename << "' not found\n";
 		return NULL;
 	}
 	spriteCopy = IMG_Load_RW(rwop, 1);
-	if (!spriteCopy) {
-		printf("IMG_LoadPNG_RW: %s\n", IMG_GetError());
+    if (spriteCopy == NULL) {
+        std::cout << "[graphicsLib::SDLSurfaceFromFile] Error on IMG_Load_RW, could not load image '" << filename << "'" << std::endl;
+        printf("IMG_LoadPNG_RW: %s\n", IMG_GetError());
     }
-	display_surface = SDL_DisplayFormat(spriteCopy);
-    SDL_FreeSurface(spriteCopy);
-    SDL_SetColors(display_surface, colormap_original, 0, COLOR_COUNT);
 
-	return display_surface;
+    display_surface = SDL_DisplayFormat(spriteCopy);
+    if (display_surface == NULL) {
+        printf("SDL_DisplayFormat: %s\n", IMG_GetError());
+    }
+
+    SDL_FreeSurface(spriteCopy);
+    update_surface_colormap(display_surface, colormap_original);
+
+    return display_surface;
 }
 
 
@@ -497,20 +494,14 @@ void graphicsLib::loadTileset()
 		exit(-1);
 	}
 
-    filename = FILEPATH + "data/images/tilesets/default_beaten.png";
-    /// @TODO - put beaten back
-    tileset_beaten = SDLSurfaceFromFile(filename);
-
-    //std::cout << "graphicsLib::loadTileset - reset colormap keys" << std::endl;
-
 	color_keys[COLOR_KEY_GREEN] = SDL_MapRGB(game_screen->format, 55, 255, 0);
-	colorcycle_manager.set_color_key_number(COLOR_KEY_GREEN, color_keys[COLOR_KEY_GREEN]);
+    colorcycle_manager.set_color_key_number(COLOR_KEY_GREEN, color_keys[COLOR_KEY_GREEN]);
 
 	color_keys[COLOR_KEY_PURPLE] = SDL_MapRGB(game_screen->format, 255, 0, 255);
-	colorcycle_manager.set_color_key_number(COLOR_KEY_PURPLE, color_keys[COLOR_KEY_PURPLE]);
+    colorcycle_manager.set_color_key_number(COLOR_KEY_PURPLE, color_keys[COLOR_KEY_PURPLE]);
 
 	color_keys[COLOR_KEY_CYAN] = SDL_MapRGB(game_screen->format, 0, 255, 255);
-	colorcycle_manager.set_color_key_number(COLOR_KEY_CYAN, color_keys[COLOR_KEY_CYAN]);
+    colorcycle_manager.set_color_key_number(COLOR_KEY_CYAN, color_keys[COLOR_KEY_CYAN]);
 
 }
 
@@ -536,6 +527,7 @@ void graphicsLib::copySDLPortion(st_rectangle original_rect, st_rectangle destin
     dest.y = destiny_rect.y;
     dest.w = destiny_rect.w;
     dest.h = destiny_rect.h;
+
     if (!surfaceOrigin) {
         cout << "copySDLArea - ERROR surfaceOrigin is NULL\n";
         show_debug_msg("EXIT #20");
@@ -553,7 +545,7 @@ void graphicsLib::copySDLPortion(st_rectangle original_rect, st_rectangle destin
         //std::cout << "graphicsLib::copySDLPortion - dest.x: " << dest.x << ", dest.w: " << dest.w << std::endl;
     }
 
-    //std::cout << ">> graphicsLib::copySDLPortion- src.w: " << src.w << ", dest.w: " << dest.w << std::endl;
+    //std::cout << ">> graphicsLib::copySDLPortion- origin.w: " << surfaceOrigin->w << ", origin.h: " << surfaceOrigin->h << ", src.x: " << src.x << ", src.y: " << src.y << std::endl;
 
     SDL_BlitSurface(surfaceOrigin, &src, surfaceDestiny, &dest);
 }
@@ -582,13 +574,10 @@ void graphicsLib::copy_area_with_colormap_update(struct st_rectangle origin_rect
         show_debug_msg("EXIT #21.3");
         exit(-1);
     }
-    //SDL_SetColors(surfaceOrigin->gSurface, colormap_original, 0, COLOR_COUNT);
-    //SDL_SetColors(surfaceDestiny->gSurface, colormap_original, 0, COLOR_COUNT);
-    //SDL_SetColors(tileset, colormap, 0, COLOR_COUNT);
-    //if (tileset_beaten != NULL) {
-        //SDL_SetColors(tileset_beaten, colormap, 0, COLOR_COUNT);
-    //}
-    SDL_SetColors(surfaceOrigin->gSurface, colormap, 0, COLOR_COUNT);
+    //update_surface_colormap(surfaceOrigin->gSurface);
+    //update_surface_colormap(surfaceDestiny->gSurface, colormap_original);
+    //update_surface_colormap(tileset, colormap);
+    update_surface_colormap(surfaceOrigin->gSurface, colormap);
     copySDLArea(origin_rectangle, pos, surfaceOrigin->gSurface, surfaceDestiny->gSurface);
 }
 
@@ -617,11 +606,11 @@ void graphicsLib::copyAreaWithAdjust(struct st_position pos, struct graphicsLib_
     //pos.x += _screen_resolution_adjust.x;
     //pos.y += _screen_resolution_adjust.y;
 
-    SDL_SetColors(surfaceOrigin->gSurface, colormap, 0, COLOR_COUNT);
+    update_surface_colormap(surfaceOrigin->gSurface, colormap);
     copySDLArea(origin_rectangle, pos, surfaceOrigin->gSurface, surfaceDestiny->gSurface);
 }
 
-void graphicsLib::placeTile(struct st_position pos_origin, struct st_position pos_destiny, struct graphicsLib_gSurface* gSurface, short use_beaten)
+void graphicsLib::placeTile(struct st_position pos_origin, struct st_position pos_destiny, struct graphicsLib_gSurface* gSurface)
 {
     if (!gSurface->gSurface) {
         std::cout << "placeTile - ERROR surfaceDestiny is NULL - ignoring..." << std::endl;
@@ -638,23 +627,15 @@ void graphicsLib::placeTile(struct st_position pos_origin, struct st_position po
 
 
     pos_destiny.x += _screen_adjust.x;
-    if (use_beaten == 1 && tileset_beaten != NULL) {
-        copySDLArea(origin_rectangle, pos_destiny, tileset_beaten, gSurface->gSurface);
-    } else {
-        copySDLArea(origin_rectangle, pos_destiny, tileset, gSurface->gSurface);
-    }
+    copySDLArea(origin_rectangle, pos_destiny, tileset, gSurface->gSurface);
 }
 
-void graphicsLib::place_3rd_level_tile(int origin_x, int origin_y, int dest_x, int dest_y, short use_beaten)
+void graphicsLib::place_3rd_level_tile(int origin_x, int origin_y, int dest_x, int dest_y)
 {
     struct st_rectangle origin_rectangle(origin_x*TILESIZE, origin_y*TILESIZE, TILESIZE, TILESIZE);
     st_position pos_destiny(dest_x+_screen_adjust.x, dest_y);
 
-    if (use_beaten == 1 && tileset_beaten != NULL) {
-        copySDLArea(origin_rectangle, pos_destiny, tileset_beaten, game_screen);
-    } else {
-        copySDLArea(origin_rectangle, pos_destiny, tileset, game_screen);
-    }
+    copySDLArea(origin_rectangle, pos_destiny, tileset, game_screen);
 }
 
 
@@ -684,7 +665,7 @@ void graphicsLib::showMapSurfaceRegion(graphicsLib_gSurface *surfaceOrigin, st_r
 	if (_screen_adjust.x < 0) {
 		origin_rectangle.w += abs(_screen_adjust.x);
 	}
-    SDL_SetColors(surfaceOrigin->gSurface, colormap, 0, COLOR_COUNT);
+    update_surface_colormap(surfaceOrigin->gSurface, colormap);
     copySDLPortion(origin_rectangle, st_rectangle(_screen_adjust.x, 0, RES_W, RES_H), surfaceOrigin->gSurface, game_screen);
 }
 
@@ -772,9 +753,9 @@ void graphicsLib::initSurface(struct st_size size, struct graphicsLib_gSurface* 
     }
 
 
-    SDL_SetColors(temp_surface, colormap_original, 0, COLOR_COUNT);
-	SDL_FillRect(temp_surface, NULL, SDL_MapRGB(game_screen->format, 123, 123, 123));
-    SDL_SetColorKey(temp_surface, SDL_SRCCOLORKEY, SDL_MapRGB(game_screen->format, 123, 123, 123));
+    update_surface_colormap(temp_surface, colormap_original);
+    SDL_FillRect(temp_surface, NULL, SDL_MapRGB(game_screen->format, COLORKEY_R, COLORKEY_G, COLORKEY_B));
+    SDL_SetColorKey(temp_surface, SDL_SRCCOLORKEY, SDL_MapRGB(game_screen->format, COLORKEY_R, COLORKEY_G, COLORKEY_B));
 
     gSurface->gSurface = SDL_DisplayFormat(temp_surface);
 
@@ -811,10 +792,10 @@ struct graphicsLib_gSurface graphicsLib::surfaceFromRegion(struct st_rectangle r
     }
 
     /// @NOTE: removed for optimization test
-    SDL_SetColors(res.gSurface, colormap_original, 0, COLOR_COUNT);
+    update_surface_colormap(res.gSurface, colormap_original);
 	copySDLArea(rect_origin, destiny_pos, originalSurface.gSurface, res.gSurface);
     /// @NOTE: removed for optimization test
-    SDL_SetColors(originalSurface.gSurface, colormap_original, 0, COLOR_COUNT);
+    update_surface_colormap(originalSurface.gSurface, colormap_original);
 	return res;
 }
 
@@ -1104,15 +1085,16 @@ void graphicsLib::draw_menu_item(int x_pos)
 
 	if (x_pos == 0) {
         spriteCopy = &e_tank[0];
-		x = 134;
+        x = 93;
 	} else if (x_pos == 1) {
         spriteCopy = &w_tank[0];
-		x = 158;
+        x = 117;
 	} else {
         spriteCopy = &s_tank[0];
-		x = 183;
+        x = 142;
 	}
-    copyArea(st_position(x, 196), spriteCopy, &gameScreen);
+    copyArea(st_rectangle(0, 0, TILESIZE, TILESIZE), st_position(x, 196), spriteCopy, &gameScreen);
+    //copyArea(st_position(x, 196), spriteCopy, &gameScreen);
 }
 
 void graphicsLib::erase_menu_item(int x_pos)
@@ -1122,18 +1104,19 @@ void graphicsLib::erase_menu_item(int x_pos)
 
 	if (x_pos == 0) {
 		spriteCopy = &e_tank[1];
-		x = 134;
+        x = 93;
 	} else if (x_pos == 1) {
 		spriteCopy = &w_tank[1];
-		x = 158;
+        x = 117;
 	} else {
 		spriteCopy = &s_tank[1];
-		x = 183;
+        x = 142;
 	}
-	copyArea(st_position(x, 196), spriteCopy, &gameScreen);
+    copyArea(st_rectangle(0, 0, TILESIZE, TILESIZE), st_position(x, 196), spriteCopy, &gameScreen);
+    //copyArea(st_position(x, 196), spriteCopy, &gameScreen);
 }
 
-void graphicsLib::draw_weapon_menu_bg(unsigned short int current_hp, graphicsLib_gSurface* player_frame) {
+void graphicsLib::draw_weapon_menu_bg(Uint8 current_hp, graphicsLib_gSurface* player_frame) {
 	showSurfaceAt(&ingame_menu, st_position((RES_W-ingame_menu.width)*0.5, (RES_H-ingame_menu.height)*0.5));
 
 	showSurfaceRegionAt(&weapon_icons.at(0), st_rectangle(0, 14, 14, 14), st_position(WPN_COLUMN1_X, 50));
@@ -1177,33 +1160,43 @@ void graphicsLib::draw_weapon_menu_bg(unsigned short int current_hp, graphicsLib
 	int item_text_pos = 217;
 
 	ss.str(std::string());
-    ss << "0" << game_save.items.lifes;
-	draw_text(100, item_text_pos, ss.str());
+    ss << "0" << (short)game_save.items.lifes;
+    draw_text(58, item_text_pos, ss.str());
 
 
 	ss.str(std::string());
-    ss << "0" << game_save.items.energy_tanks;
-	draw_text(134, item_text_pos, ss.str());
+    ss << "0" << (short)game_save.items.energy_tanks;
+    draw_text(93, item_text_pos, ss.str());
 
 	ss.str(std::string());
-    ss << "0" << game_save.items.weapon_tanks;
-	draw_text(158, item_text_pos, ss.str());
+    ss << "0" << (short)game_save.items.weapon_tanks;
+    draw_text(117, item_text_pos, ss.str());
 
 	ss.str(std::string());
-    ss << "0" << game_save.items.special_tanks;
-	draw_text(183, item_text_pos, ss.str());
+    ss << "0" << (short)game_save.items.special_tanks;
+    draw_text(142, item_text_pos, ss.str());
 
 
 	ss.str(std::string());
-    ss << "0" << game_save.items.bolts;
-	draw_text(265, item_text_pos, ss.str());
+    ss << "0" << (int)game_save.items.bolts;
+    draw_text(273, item_text_pos, ss.str());
 
 	//std::cout << "item_ref->energy_tanks: " << item_ref->energy_tanks << ", item_ref->weapon_tanks: " << item_ref->weapon_tanks << std::endl;
 
 	//if (item_ref->balancer > 0) {
 	if (true) {
-		copyArea(st_position(223, 197), &energy_balancer, &gameScreen);
+        copyArea(st_position(245, 196), &energy_balancer, &gameScreen);
 	}
+
+    if (game_save.armor_pieces[ARMOR_ARMS] == true) {
+        copyArea(st_position(198, 197), &armor_icon_arms, &gameScreen);
+    }
+    if (game_save.armor_pieces[ARMOR_BODY] == true) {
+        copyArea(st_position(221, 197), &armor_icon_body, &gameScreen);
+    }
+    if (game_save.armor_pieces[ARMOR_LEGS] == true) {
+        copyArea(st_position(175, 197), &armor_icon_legs, &gameScreen);
+    }
 
 	updateScreen();
 }
@@ -1476,12 +1469,9 @@ void graphicsLib::reset_colormap()
 	change_colormap(COLOR_KEY_CYAN, st_color(0, 255, 255));
 
     if (tileset != NULL) {
-        SDL_SetColors(tileset, colormap_original, 0, COLOR_COUNT);
+        update_surface_colormap(tileset, colormap_original);
     }
-    if (tileset_beaten != NULL) {
-        SDL_SetColors(tileset_beaten, colormap_original, 0, COLOR_COUNT);
-    }
-    SDL_SetColors(game_screen, colormap_original, 0, COLOR_COUNT);
+    update_surface_colormap(game_screen, colormap_original);
 }
 
 void graphicsLib::reset_image_colormap(graphicsLib_gSurface &surface)
@@ -1585,19 +1575,15 @@ void graphicsLib::draw_explosion(st_position pos)
 	int max_frames = 7;
 
 	if (_explosion_animation_pos >= max_frames) {
-		//std::cout << "projectile::draw - RESET _explosion_animation_pos" << std::endl;
 		_explosion_animation_pos = 0;
 	}
 
 	int anim_pos = _explosion_animation_pos*explosion_size.width;
-	//std::cout << "projectile::draw - _explosion_animation_pos: " << _explosion_animation_pos << ", _max_frames: " << _max_frames << ", explosion_size.width: " << explosion_size.width << ", anim_pos: " << anim_pos << std::endl;
 
     showSurfaceRegionAt(&bomb_explosion_surface, st_rectangle(anim_pos, 0, explosion_size.width, explosion_size.height), pos);
 
-	//std::cout << "projectile::draw - _explosion_animation_timer: " << _explosion_animation_timer << ", timer: " << timer.getTimer() << std::endl;
 	if (_explosion_animation_timer < timer.getTimer()) {
 		_explosion_animation_pos++;
-		//std::cout << "projectile::draw - inc anim_pos to " << _explosion_animation_pos << std::endl;
 		_explosion_animation_timer = timer.getTimer() + PROJECTILE_DEFAULT_ANIMATION_TIME;
 	}
 
@@ -1616,7 +1602,7 @@ void graphicsLib::show_debug_msg(string msg)
 
 void graphicsLib::reset_tileset_colormap()
 {
-    SDL_SetColors(tileset, colormap_original, 0, COLOR_COUNT);
+    update_surface_colormap(tileset, colormap_original);
 }
 
 void graphicsLib::draw_path(st_position initial_point, st_position final_point, short duration)
@@ -1667,7 +1653,7 @@ void graphicsLib::draw_path(st_position initial_point, st_position final_point, 
     }
 }
 
-void graphicsLib::add_stage_colorcycle(short stage_n, format_v2_0::file_colorcycle& colorcycle)
+void graphicsLib::add_stage_colorcycle(short stage_n, CURRENT_FILE_FORMAT::file_colorcycle& colorcycle)
 {
     colorcycle_manager.add_stage_colorcycle(stage_n, colorcycle);
 }
@@ -1854,6 +1840,7 @@ void graphicsLib::set_video_mode()
     512x448 - good but small
     */
 #else
+
     if (_video_filter == VIDEO_FILTER_NOSCALE) {
         if (game_config.video_fullscreen == false) {
             game_screen = SDL_SetVideoMode(RES_W, RES_H, 8, SDL_HWSURFACE | SDL_DOUBLEBUF);
@@ -1861,7 +1848,6 @@ void graphicsLib::set_video_mode()
             game_screen = SDL_SetVideoMode(RES_W, RES_H, 8, SDL_HWSURFACE | SDL_DOUBLEBUF | SDL_FULLSCREEN);
         }
         //game_screen = SDL_SetVideoMode(480, 272, 8, SDL_HWSURFACE | SDL_DOUBLEBUF); // used for testing centered screen
-        SDL_SetColors(game_screen, colormap_original, 0, COLOR_COUNT);
     } else {
         /// @TODO - do we need scale on fullscreen if no filter?
         if (game_config.video_fullscreen == false) {
@@ -1869,7 +1855,7 @@ void graphicsLib::set_video_mode()
         } else {
             game_screen_scaled = SDL_SetVideoMode(RES_W*2, RES_H*2, 8, SDL_HWSURFACE|SDL_DOUBLEBUF|SDL_FULLSCREEN);
         }
-        SDL_SetColors(game_screen_scaled, colormap_original, 0, COLOR_COUNT);
+        update_surface_colormap(game_screen_scaled, colormap_original);
         if (game_screen != NULL) {
             SDL_FreeSurface(game_screen);
         }
@@ -1879,7 +1865,7 @@ void graphicsLib::set_video_mode()
     }
 #endif
 
-    SDL_SetColors(game_screen, colormap_original, 0, COLOR_COUNT);
+    update_surface_colormap(game_screen, colormap_original);
 	if (!game_screen) {
         std::cout << "FATAL-ERROR::initGraphics Could not create game_screen" << std::endl;
         show_debug_msg("EXIT #13");
@@ -1903,7 +1889,7 @@ void graphicsLib::preload_images()
 	surfaceFromFile(filename, &small_explosion);
 
 	// projectile images
-	for (int i=0; i<MAX_FILE_PROJECTILES; i++) {
+    for (int i=0; i<FS_MAX_PROJECTILES; i++) {
 		std::string filename(game_data.projectiles[i].graphic_filename);
 		filename = FILEPATH + "data/images/projectiles/" + filename;
 		if (filename.length() > 0 && filename.find(".png") != std::string::npos) {
@@ -1941,9 +1927,32 @@ void graphicsLib::preload_images()
 	filename = FILEPATH + "data/images/tilesets/hit.png";
 	surfaceFromFile(filename, &hit);
 
-	filename = FILEPATH + "data/images/tilesets/water_splash.png";
+    filename = FILEPATH + "data/images/tilesets/water_splash.png";
 	surfaceFromFile(filename, &water_splash);
 
+    filename = FILEPATH + "data/images/sprites/objects/armor_arms.png";
+    surfaceFromFile(filename, &armor_icon_arms);
+
+    filename = FILEPATH + "data/images/sprites/objects/armor_body.png";
+    surfaceFromFile(filename, &armor_icon_body);
+
+    filename = FILEPATH + "data/images/sprites/objects/armor_legs.png";
+    surfaceFromFile(filename, &armor_icon_legs);
+
+}
+
+void graphicsLib::update_surface_colormap(SDL_Surface *display_surface, SDL_Color set_colormap[])
+{
+#ifdef WIN32
+    SDL_SetColors(display_surface, set_colormap, 0, COLOR_COUNT);
+#else
+    SDL_SetPalette(display_surface, SDL_LOGPAL, set_colormap, 0, COLOR_COUNT);
+#endif
+}
+
+void graphicsLib::update_surface_colormap(graphicsLib_gSurface *display_surface)
+{
+    update_surface_colormap(display_surface->gSurface, colormap);
 }
 
 
@@ -2021,15 +2030,22 @@ void graphicsLib::change_surface_color(st_color key, st_color new_color, struct 
 	for (int i=0; i<COLOR_COUNT; i++) {
         new_colormap[i] = surface->gSurface->format->palette->colors[i];
     }
-	Uint32 key_n = SDL_MapRGB(tileset->format, key.r, key.g, key.b);
+    Uint32 key_n = SDL_MapRGB(tileset->format, key.r, key.g, key.b);
+    if (key_n > COLOR_COUNT) {
+        return;
+    }
+    //std::cout << "key_n: " << key_n << std::endl;
 	new_colormap[key_n].r = new_color.r;
 	new_colormap[key_n].g = new_color.g;
     new_colormap[key_n].b = new_color.b;
-    SDL_SetColors(surface->gSurface, new_colormap, 0, COLOR_COUNT);
+    update_surface_colormap(surface->gSurface, new_colormap);
 }
 
 void graphicsLib::change_surface_color(int key_n, st_color new_color, graphicsLib_gSurface *surface)
 {
+    if (key_n > COLOR_COUNT || key_n < 0) {
+        return;
+    }
     SDL_Color new_colormap[COLOR_COUNT];
     for (int i=0; i<COLOR_COUNT; i++) { // copy current colormap
         new_colormap[i] = surface->gSurface->format->palette->colors[i];
@@ -2038,7 +2054,7 @@ void graphicsLib::change_surface_color(int key_n, st_color new_color, graphicsLi
     new_colormap[key_n].r = new_color.r;
     new_colormap[key_n].g = new_color.g;
     new_colormap[key_n].b = new_color.b;
-    SDL_SetColors(surface->gSurface, new_colormap, 0, COLOR_COUNT);
+    update_surface_colormap(surface->gSurface, new_colormap);
 }
 
 
@@ -2068,33 +2084,27 @@ st_size graphicsLib::get_config_menu_size()
 
 void graphicsLib::set_colormap_white(graphicsLib_gSurface *surface)
 {
-    SDL_SetColors(surface->gSurface, colormap_white, 0, COLOR_COUNT);
+    update_surface_colormap(surface->gSurface, colormap_white);
 }
 
 void graphicsLib::set_colormap_original(graphicsLib_gSurface *surface)
 {
-    SDL_SetColors(surface->gSurface, colormap_original, 0, COLOR_COUNT);
+    update_surface_colormap(surface->gSurface, colormap_original);
 }
 
 void graphicsLib::set_colormap_current(graphicsLib_gSurface *surface)
 {
-    SDL_SetColors(surface->gSurface, colormap, 0, COLOR_COUNT);
+    update_surface_colormap(surface->gSurface, colormap);
 }
 
 void graphicsLib::set_colormap_current_tileset()
 {
-    SDL_SetColors(tileset, colormap, 0, COLOR_COUNT);
-    if (tileset_beaten != NULL) {
-        SDL_SetColors(tileset_beaten, colormap, 0, COLOR_COUNT);
-    }
+    update_surface_colormap(tileset, colormap);
 }
 
 void graphicsLib::set_colormap_original_tileset()
 {
-    SDL_SetColors(tileset, colormap_original, 0, COLOR_COUNT);
-    if (tileset_beaten != NULL) {
-        SDL_SetColors(tileset_beaten, colormap_original, 0, COLOR_COUNT);
-    }
+    update_surface_colormap(tileset, colormap_original);
 }
 
 

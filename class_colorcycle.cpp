@@ -72,10 +72,10 @@ void class_colorcycle::reset_colorcycle()
 void class_colorcycle::execute(void)
 {
 	if (colorcycle_map[current_colormap].colors.size() == 0) {
-        //std::cout << "class_colorcycle::execute - no colorcycle for current_colormap: " << current_colormap << std::endl;
 		return;
-    //} else {
-        //std::cout << ">>> COLORCYCLE::set_colormap::current_colormap: " << current_colormap << std::endl;
+    }
+    if (timer.is_paused() == true) {
+        return;
     }
     int now_time = timer.getTimer();
     bool update_colors = false;
@@ -90,7 +90,7 @@ void class_colorcycle::execute(void)
 					current_position[i] = 0;
 				}
 				time_count[i] = now_time;
-			}
+            }
 		} else {
 			current_position[i] = 0;
 		}
@@ -135,7 +135,7 @@ void class_colorcycle::set_color_key_number(unsigned int map_key, int color_numb
     color_keys[map_key] = color_number;
 }
 
-void class_colorcycle::add_stage_colorcycle(short stage_n, format_v2_0::file_colorcycle &colorcycle)
+void class_colorcycle::add_stage_colorcycle(short stage_n, CURRENT_FILE_FORMAT::file_colorcycle &colorcycle)
 {
     if (have_colorcycle(stage_n)) {
         //std::cout << "colorcycle::add_stage_colorcycle - already have colorcycle for stage #" << stage_n << std::endl;

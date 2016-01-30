@@ -1,7 +1,7 @@
 #ifndef PROJECTILELIB_H
 #define PROJECTILELIB_H
 
-#include "st_common.h"
+#include "file/format/st_common.h"
 #include "defines.h"
 #include <string>
 #include "timerlib.h"
@@ -11,7 +11,6 @@
 
 class classMap; // advance declaration
 
-extern graphicsLib graphLib; /**< TODO */
 
 #include "graphic/draw.h"
 extern draw draw_lib;
@@ -125,11 +124,16 @@ public:
      * @param sety
      */
     void set_y(int sety);
+
     /**
      * @brief
      *
      */
     void consume_projectile();
+
+
+    void finish(); // force finish, used in char::clean_projectiles, handles effects that should be removed
+
     /**
      * @brief
      *
@@ -163,21 +167,21 @@ public:
     /**
      * @brief
      *
-     * @return unsigned short
+     * @return Uint8
      */
-    unsigned short get_speed() const;
+    Uint8 get_speed() const;
     /**
      * @brief
      *
-     * @return unsigned short
+     * @return Uint8
      */
-    unsigned short get_damage() const;
+    Uint8 get_damage() const;
     /**
      * @brief
      *
-     * @return unsigned short
+     * @return Uint8
      */
-    unsigned short get_trajectory() const;
+    Uint8 get_trajectory() const;
     /**
      * @brief
      *
@@ -198,6 +202,14 @@ public:
      */
     graphicsLib_gSurface* get_surface();
 
+    void inc_status(); // increase status, so we can explode a bomb or change centered (star circle) to linear
+
+    st_rectangle get_area();
+
+    short get_max_shots();
+
+    short get_id();
+
 private:
     // methods that return properties taking in account id -1 (default projectile)
     /**
@@ -205,7 +217,7 @@ private:
      *
      * @return st_size
      */
-    st_size get_size() const;
+    st_size_int8 get_size() const;
 
     void move_ahead(st_size &moved);
     void position_to_ground();
@@ -219,7 +231,7 @@ public:
 
 private:
     int _id; /**< TODO */
-    st_size _size; /**< TODO */
+    st_size_int8 _size; /**< TODO */
     unsigned int animation_pos; /**< TODO */
     unsigned int animation_timer; /**< TODO */
     int direction; /**< TODO */
@@ -238,7 +250,7 @@ private:
     st_float_position _diagonal_speed;
 
     bool diagonal_flag; // used to control diagonal shot angle /**< TODO */
-    unsigned short int _max_frames; // number of frames for the projectile /**< TODO */
+    Uint8 _max_frames; // number of frames for the projectile /**< TODO */
     float angle; /**< TODO */
     short int radius; /**< TODO */
 
@@ -262,6 +274,8 @@ private:
 
     bool _is_temporary;                                 // this is needed because C++ lists create a copy, so we must know that this little one here is NOT the one that is inside the list
     short _change_direction_counter;                    // used to prevent changing frames too fast
+    float _sin_x;                                       // used for sinoidal movement
+    int _chain_width;
 
 };
 #endif // PROJECTILELIB_H

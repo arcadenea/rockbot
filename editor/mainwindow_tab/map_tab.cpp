@@ -24,9 +24,7 @@ map_tab::~map_tab()
 
 void map_tab::reload()
 {
-    //std::cout << ">>>>>>>>>>>>> DEBUG#2.1 <<<<<<<<<<<<<<<" << std::endl;
     fill_data();
-    std::cout << ">>>>>>>>>>>>> DEBUG#2.2 <<<<<<<<<<<<<<<" << std::endl;
 }
 
 void map_tab::save()
@@ -58,20 +56,14 @@ void map_tab::pick_bg_color()
 void map_tab::fill_data()
 {
     _data_loading = true;
-    //std::cout << ">>>>>>>>>>>>> DEBUG# 3.1 <<<<<<<<<<<<<<<" << std::endl;
     common::fill_stages_combo(ui->stageListCombo);
-    //std::cout << ">>>>>>>>>>>>> DEBUG# 3.2 <<<<<<<<<<<<<<<" << std::endl;
     common::fill_map_list_combo(ui->mapListCombo);
-    //std::cout << ">>>>>>>>>>>>> DEBUG# 3.3 <<<<<<<<<<<<<<<" << std::endl;
     common::fill_npc_listwidget(ui->npc_listWidget);
-    //std::cout << ">>>>>>>>>>>>> DEBUG# 3.4 <<<<<<<<<<<<<<<" << std::endl;
     common::fill_object_listWidget(ui->objectListWidget);
-    //std::cout << ">>>>>>>>>>>>> DEBUG# 3.5 <<<<<<<<<<<<<<<" << std::endl;
     fill_background_list();
-    //std::cout << ">>>>>>>>>>>>> DEBUG# 3.6 <<<<<<<<<<<<<<<" << std::endl;
-
+    ui->npc_direction_combo->setCurrentIndex(dataExchanger->npc_direction);
+    ui->object_direction_combo->setCurrentIndex(dataExchanger->object_direction);
     _data_loading = false;
-    //std::cout << ">>>>>>>>>>>>> DEBUG# 3.7 <<<<<<<<<<<<<<<" << std::endl;
 }
 
 void map_tab::fill_background_list()
@@ -84,17 +76,26 @@ void map_tab::fill_background_list()
     ui->bg2_filename->setCurrentIndex(ui->bg2_filename->findText(bg2_filename));
     ui->bg1_y_pos->setValue(stage_data.stages[dataExchanger->currentStage].maps[dataExchanger->currentMap].backgrounds[0].adjust_y);
     ui->bg2_y_pos->setValue(stage_data.stages[dataExchanger->currentStage].maps[dataExchanger->currentMap].backgrounds[1].adjust_y);
+
     float bg1_speed = (float)stage_data.stages[dataExchanger->currentStage].maps[dataExchanger->currentMap].backgrounds[0].speed/10;
     ui->bg1_speed->setValue(bg1_speed);
-    ui->bg2_speed->setValue((float)stage_data.stages[dataExchanger->currentStage].maps[dataExchanger->currentMap].backgrounds[1].speed/10);
+    float bg2_speed = (float)stage_data.stages[dataExchanger->currentStage].maps[dataExchanger->currentMap].backgrounds[1].speed/10;
+    ui->bg2_speed->setValue(bg2_speed);
     std::stringstream ss;
     ss.str(std::string());
     ss << "background-color: rgb(" << stage_data.stages[dataExchanger->currentStage].maps[dataExchanger->currentMap].background_color.r << ", " << stage_data.stages[dataExchanger->currentStage].maps[dataExchanger->currentMap].background_color.g << ", " << stage_data.stages[dataExchanger->currentStage].maps[dataExchanger->currentMap].background_color.b << ")";
     ui->bg_color_pick->setStyleSheet(ss.str().c_str());
+    for (int i=0; i<10; i++) {
+        ui->current_anim_tile_combobox->addItem(QString::number(i));
+    }
+    common::fill_files_combo("data/images/tilesets/anim", ui->anim_tile_graphic_combobox);
 }
 
 void map_tab::on_stageListCombo_currentIndexChanged(int index)
 {
+    if (_data_loading == true) {
+        return;
+    }
     _data_loading = true;
     dataExchanger->currentMap = 0;
     dataExchanger->currentStage = index;
@@ -109,19 +110,26 @@ void map_tab::on_mapListCombo_currentIndexChanged(int index)
     if (index < 0) {
         return;
     }
+    _data_loading = true;
     dataExchanger->currentMap = index;
     fill_background_list();
+    _data_loading = false;
     ui->editArea->repaint();
 }
 
 void map_tab::on_spinBox_valueChanged(int arg1)
 {
     dataExchanger->zoom = arg1;
+    ui->editArea->repaint();
 }
 
 void map_tab::on_comboBox_currentIndexChanged(int index)
 {
-    dataExchanger->layerLevel = index+1;
+    int value = 1;
+    if (index == 1) {
+        value = 3;
+    }
+    dataExchanger->layerLevel = value;
     ui->editArea->repaint();
 }
 
@@ -137,6 +145,7 @@ void map_tab::on_npc_listWidget_currentRowChanged(int currentRow)
 
 void map_tab::on_npc_direction_combo_currentIndexChanged(int index)
 {
+    if (_data_loading == true) { return; }
     dataExchanger->npc_direction = index;
 }
 
@@ -182,7 +191,7 @@ void map_tab::on_bg1_speed_valueChanged(double arg1)
 {
     if (_data_loading == true) { return; }
     stage_data.stages[dataExchanger->currentStage].maps[dataExchanger->currentMap].backgrounds[0].speed = arg1*10;
-    std::cout << "*** on_bg1_speed_valueChanged - setvalue: " << arg1 << ", bg1.speed: " << stage_data.stages[dataExchanger->currentStage].maps[dataExchanger->currentMap].backgrounds[0].speed << std::endl;
+    std::cout << "#3 *** on_bg1_speed_valueChanged - setvalue: " << arg1 << ", bg1.speed: " << (int)stage_data.stages[dataExchanger->currentStage].maps[dataExchanger->currentMap].backgrounds[0].speed << std::endl;
     update_edit_area();
 }
 
@@ -208,6 +217,7 @@ void map_tab::on_bg2_speed_valueChanged(double arg1)
 {
     if (_data_loading == true) { return; }
     stage_data.stages[dataExchanger->currentStage].maps[dataExchanger->currentMap].backgrounds[1].speed = arg1*10;
+    std::cout << ">> on_bg2_speed_valueChanged, value: " << (int)stage_data.stages[dataExchanger->currentStage].maps[dataExchanger->currentMap].backgrounds[1].speed << std::endl;
     update_edit_area();
 }
 
@@ -237,4 +247,31 @@ void map_tab::on_checkBox_3_toggled(bool checked)
     if (_data_loading == true) { return; }
     dataExchanger->show_bg2 = checked;
     update_edit_area();
+}
+
+
+void map_tab::on_current_anim_tile_combobox_currentIndexChanged(int index)
+{
+    if (_data_loading == true) { return; }
+    dataExchanger->selectedAnimTileset = index;
+    ui->anim_tile_graphic_combobox->setCurrentIndex(ui->anim_tile_graphic_combobox->findText(game_data.anim_tiles[index].filename));
+    ui->anim_tile_delay_spinbox->setValue(game_data.anim_tiles[index].delay);
+}
+
+void map_tab::on_anim_tile_graphic_combobox_currentIndexChanged(const QString &arg1)
+{
+    if (_data_loading == true) { return; }
+    sprintf(game_data.anim_tiles[dataExchanger->selectedAnimTileset].filename, "%s", arg1.toStdString().c_str());
+}
+
+void map_tab::on_anim_tile_delay_spinbox_valueChanged(int arg1)
+{
+    if (_data_loading == true) { return; }
+    game_data.anim_tiles[dataExchanger->selectedAnimTileset].delay = arg1;
+}
+
+void map_tab::on_object_direction_combo_currentIndexChanged(int index)
+{
+    if (_data_loading == true) { return; }
+    dataExchanger->object_direction = index;
 }

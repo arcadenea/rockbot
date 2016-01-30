@@ -152,10 +152,10 @@ public:
      * @brief
      *
      */
-    void move_objects() const;
+    void move_objects(bool paused=false) const;
 
 
-    void show_objects() const;
+    void show_objects(int adjust=0) const;
     /**
      * @brief
      *
@@ -183,6 +183,10 @@ public:
     int get_teleport_minimal_y(int xpos) const;
 
     void reset_objects_timers() const;
+
+    bool subboss_alive_on_left(short tileX);
+
+    void activate_final_boss_teleporter();
 
 
 public:

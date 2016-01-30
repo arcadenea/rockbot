@@ -66,6 +66,14 @@ private slots:
 
     void on_checkBox_3_toggled(bool checked);
 
+    void on_current_anim_tile_combobox_currentIndexChanged(int index);
+
+    void on_anim_tile_graphic_combobox_currentIndexChanged(const QString &arg1);
+
+    void on_anim_tile_delay_spinbox_valueChanged(int arg1);
+
+    void on_object_direction_combo_currentIndexChanged(int index);
+
 private:
     void fill_data();
     void fill_background_list();

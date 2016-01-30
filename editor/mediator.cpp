@@ -34,19 +34,21 @@ Mediator::Mediator() {
 	NpcAddNumber=0;
 	layerLevel=1;
 	selectedNPC = -1;
+    selectedAnimTileset = 0;
 	terrainType = 1;
 	editModeNPC = EDIT_MODE_NEW;
 	currentMap = 0;
 	link_type = LINK_HORIZONTAL;
 	object_type = 3;
 	npc_direction = 0;
+    object_direction = 0;
 
 	zoom = 1;
 	static_npc_list = NULL;
 	npc_map_list = NULL;
 	currentStage = 1;
 	sprintf(addNpcFilename, "%c", '\0');
-	sprintf(addProjectileFilename, "%c", '\0');
+    sprintf(addProjectileFilename, "%c", '\0');
 
 	link_bidi = true;
 	link_is_door = false;
@@ -270,7 +272,9 @@ Mediator::Mediator() {
 	show_colorcycle2 = true;
 	show_colorcycle3 = true;
 
-    show_beaten = false;
+    show_objects_flag = true;
+    show_npcs_flag = true;
+    show_teleporters_flag = true;
 }
 
 // set default values for game variable
@@ -295,15 +299,8 @@ void Mediator::setPalleteY(int value) {
 	palleteY = value;
 }
 
-char *Mediator::getPallete() {
-    selectedTileset = "data/images/tilesets/default.png";
-    if (show_beaten == true) {
-        QFile file("data/images/tilesets/default_beaten.png");
-        if (file.exists()) {
-            selectedTileset = "data/images/tilesets/default_beaten.png";
-        }
-    }
-    //std::cout << "MEDIATOR::getPallete() - res: " << selectedTileset << std::endl;
+std::string Mediator::getPallete() {
+    selectedTileset = FILEPATH + "data/images/tilesets/default.png";
     return selectedTileset;
 }
 

@@ -31,6 +31,14 @@ private:
      *
      */
     void boss();
+
+
+    void boss_rockbot(graphicsLib_gSurface &last_stage_bg, graphicsLib_gSurface &destrin_sprites, st_position &destrin_pos, st_position &p_pos);
+    void boss_betabot(graphicsLib_gSurface &last_stage_bg, graphicsLib_gSurface &destrin_sprites, st_position &destrin_pos, st_position &p_pos);
+    void boss_candybot(graphicsLib_gSurface &last_stage_bg, graphicsLib_gSurface &destrin_sprites, st_position &destrin_pos, st_position &p_pos);
+    void boss_kittybot(graphicsLib_gSurface &last_stage_bg, graphicsLib_gSurface &destrin_sprites, st_position &destrin_pos, st_position &p_pos);
+
+
     /**
      * @brief
      *

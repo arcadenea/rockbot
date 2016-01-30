@@ -24,8 +24,6 @@ private slots:
 
 	void on_objectlist_combo_currentIndexChanged(int index);
 
-	void on_add_new_pushbutton_clicked();
-
 	void on_name_textChanged(const QString &arg1);
 
 	void on_type_combo_currentIndexChanged(int index);

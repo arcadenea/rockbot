@@ -1,7 +1,7 @@
 #ifndef COLISION_DETECTION_H
 #define COLISION_DETECTION_H
 
-#include "st_common.h"
+#include "file/format/st_common.h"
 
 /**
  * @brief

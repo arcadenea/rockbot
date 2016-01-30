@@ -14,6 +14,7 @@ extern draw draw_lib;
 
 #include "graphic/option_picker.h"
 
+
 #include "defines.h"
 
 
@@ -164,6 +165,12 @@ int key_map::draw_config_keys() const
         options.push_back("DIRECTIONAL: ANALOG");
     }
     // -- NEW --//
+    if (game_config.input_mode == INPUT_MODE_DIGITAL) {
+        options.push_back("SET UP");
+        options.push_back("SET DOWN");
+        options.push_back("SET LEFT");
+        options.push_back("SET RIGHT");
+    }
 
 
 
@@ -178,10 +185,11 @@ int key_map::draw_config_keys() const
 
 
 
-void key_map::config_input() const
+void key_map::config_input()
 {
-
+    CURRENT_FILE_FORMAT::st_game_config game_config_copy = game_config;
     int selected_option = 0;
+
     while (selected_option != -1) {
         selected_option = draw_config_keys();
 
@@ -192,6 +200,8 @@ void key_map::config_input() const
             std::cout << "key_map::config_input - LEAVE #1" << std::endl;
         } else if (selected_option == -1) {
             std::cout << "key_map::config_input - LEAVE #2" << std::endl;
+            // apply changes to game-config
+            apply_key_codes_changes(game_config_copy);
             return;
 
         // -- NEW -- //
@@ -221,6 +231,14 @@ void key_map::config_input() const
                 selected_key = BTN_R;
             } else if (selected_option == 7) {
                 selected_key = BTN_START;
+            } else if (selected_option == 9) {
+                selected_key = BTN_UP;
+            } else if (selected_option == 10) {
+                selected_key = BTN_DOWN;
+            } else if (selected_option == 11) {
+                selected_key = BTN_LEFT;
+            } else if (selected_option == 12) {
+                selected_key = BTN_RIGHT;
             }
 
             st_position menu_pos(graphLib.get_config_menu_pos().x + 74, graphLib.get_config_menu_pos().y + 40);
@@ -228,10 +246,43 @@ void key_map::config_input() const
             graphLib.draw_text(menu_pos.x, menu_pos.y, "PRESS A KEY OR BUTTON");
             input.clean();
             input.waitTime(20);
-            std::cout << "key_map::config_input - PICK KEY #2" << std::endl;
-            input.pick_key_or_button(selected_key);
-            std::cout << "key_map::config_input - PICK KEY #3" << std::endl;
+            bool is_joystick = input.pick_key_or_button(game_config_copy, selected_key);
+            check_key_duplicates(game_config_copy, selected_key, is_joystick);
         }
+    }
+    // apply changes to game-config
+    apply_key_codes_changes(game_config_copy);
+}
+
+// if any key is duplicated in the config, reset it to default value
+void key_map::check_key_duplicates(CURRENT_FILE_FORMAT::st_game_config game_config_copy, int set_key, bool is_joystick)
+{
+    int default_keys_codes[BTN_COUNT];
+    int default_button_codes[BTN_COUNT];
+
+    game_config_copy.get_default_keys(default_keys_codes);
+    game_config_copy.get_default_buttons(default_button_codes);
+
+    for (int i=0; i<BTN_COUNT; i++) {
+        if (is_joystick == false) {
+            if (i != set_key && game_config_copy.keys_codes[i] == game_config_copy.keys_codes[set_key]) { // found duplicate
+                std::cout << "FOUND DUPLICATE KEY, set_key[" << set_key << "]: " << game_config_copy.keys_codes[set_key] << ", [" << i <<"] with value: " << game_config_copy.keys_codes[i] << ", RESET" << std::endl;
+                game_config_copy.keys_codes[i] = default_keys_codes[i]; // reset duplicate to default value, avoiding setting two buttons with same key
+            }
+        } else {
+            if (i != set_key && game_config_copy.button_codes[i] == game_config_copy.button_codes[set_key]) { // found duplicate
+                std::cout << "FOUND DUPLICATE BUTTON, set_key[" << set_key << "]: " << game_config_copy.button_codes[set_key] << ", [" << i <<"] with value: " << game_config_copy.button_codes[i] << ", RESET" << std::endl;
+                game_config_copy.button_codes[i] = default_button_codes[i]; // reset duplicate to default value, avoiding setting two buttons with same key
+            }
+        }
+    }
+}
+
+void key_map::apply_key_codes_changes(format_v_3_0_1::st_game_config game_config_copy)
+{
+    for (int i=0; i<BTN_COUNT; i++) {
+        game_config.keys_codes[i] = game_config_copy.keys_codes[i];
+        game_config.button_codes[i] = game_config_copy.button_codes[i];
     }
 }
 

@@ -152,15 +152,13 @@ st_position class_config::move_weapon_curstor_left() const // moving from right-
         new_x = 0;
     }
     // search for a existing slot to move to
-    for (int i=ingame_menu_pos.y; i<WPN_ROWS-1; i++) { // start on current y
+    for (int i=ingame_menu_pos.y; i<WPN_ROWS; i++) { // start on current y
         if (_weapons_matrix[new_x][i] == true) {
-            //std::cout << "MV-LEFT #1 - Found slot at [" << new_x << "][" << i << "]" << std::endl;
             return st_position(new_x, i);
         }
     }
     for (int i=0; i<ingame_menu_pos.y; i++) { // remaining y positions
         if (_weapons_matrix[new_x][i] == true) {
-            //std::cout << "MV-LEFT #2 - Found slot at [" << new_x << "][" << i << "]" << std::endl;
             return st_position(new_x, i);
         }
     }
@@ -231,7 +229,7 @@ st_position class_config::move_weapon_curstor_down()
 void class_config::change_player_frame_color()
 {
 	short int selected_weapon = convert_menu_pos_to_weapon_n(ingame_menu_pos);
-	format_v2_0::file_weapon_colors colors = player_ref->get_weapon_colors(selected_weapon);
+    CURRENT_FILE_FORMAT::file_weapon_colors colors = player_ref->get_weapon_colors(selected_weapon);
 
 	if (colors.color1.r != -1) {
 		graphLib.change_surface_color(player_ref->get_color_key(0), colors.color1, &_player_surface);
@@ -327,12 +325,19 @@ void class_config::draw_ingame_menu()
 bool class_config::execute_ingame_menu()
 {
     st_position old_pos;
+
+
     if (input.p1_input[BTN_START] == 1) {
         input.clean();
         input.waitTime(300);
+        // leaving menu, removes pause
+        if (ingame_menu_active == true) {
+            timer.unpause();
+        }
         ingame_menu_active = !ingame_menu_active;
 
         if (ingame_menu_active) {
+            timer.pause();
             generate_weapons_matrix();
             draw_ingame_menu();
         } else {
@@ -363,6 +368,7 @@ bool class_config::execute_ingame_menu()
         } else if (input.p1_input[BTN_R] == 1) {
             if (gameControl.show_config(game_save.stages[gameControl.currentStage]) == true) { // player picked "leave stage" option
                 ingame_menu_active = false;
+                timer.unpause();
                 return true;
             }
             draw_ingame_menu();

@@ -20,7 +20,8 @@ void EditorTilePallete::paintEvent(QPaintEvent *) {
    //printf("DEBUG.EditorTilePallete - paintEvent, selectedTileX: %d, selectedTileY: %d\n", selectedTileX, selectedTileY);
    QPainter painter(this);
    if (currentPallete.length() <= 0) {
-      filename = new QString(dataExchanger->getPallete());
+      std::string tempstr = dataExchanger->getPallete();
+      filename = new QString(tempstr.c_str());
    } else {
 	  filename = new QString(QString(EDITOR_FILEPATH)+"/data/images/tilesets/");
       filename->append(currentPallete);
@@ -62,7 +63,7 @@ void EditorTilePallete::mousePressEvent(QMouseEvent *event) {
 
 
 QString EditorTilePallete::getPallete() {
-    return dataExchanger->getPallete();
+    return QString(dataExchanger->getPallete().c_str());
 }
 
 //void EditorTilePallete::signalPalleteChanged() {

@@ -22,7 +22,7 @@ void projectilePreviewArea::paintEvent(QPaintEvent *) {
 	}
 
 	QPixmap image(projectile_filename.c_str());
-	if (image.isNull()) {
+    if (image.isNull() == true || image.width() <= 0) {
 		std::cout << "projectilePreviewArea::paintEvent - Could not load image file '" << dataExchanger->addProjectileFilename << "'" << std::endl;
 		return;
 	}

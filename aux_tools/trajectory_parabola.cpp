@@ -1,7 +1,6 @@
 #include <cmath>
 #include <iostream>
 #include "trajectory_parabola.h"
-#include <cmath>
 
 // http://coral.ufsm.br/gef/Dinamica/dinami10.pdf
 

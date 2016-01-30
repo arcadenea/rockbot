@@ -24,7 +24,19 @@ public:
      *
      * @return unsigned int
      */
-    unsigned int getTimer() const;
+    unsigned long getTimer() const;
+
+    void start_ticker(); // start counting ticks
+    long get_ticks();    // used if we need a timer count
+    void pause();
+    void unpause();
+    bool is_paused();
+
+private:
+    bool _paused;
+    long _ticks;
+    long _paused_ticks;
+    long _paused_timer;
 };
 
 #endif // TIMERLIB_H

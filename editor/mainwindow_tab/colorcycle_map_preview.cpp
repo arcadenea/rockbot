@@ -106,12 +106,6 @@ void colorcycle_map_preview::paintEvent(QPaintEvent *) {
 				QRectF source(QPoint((stage_data.stages[dataExchanger->currentStage].maps[dataExchanger->currentMap].tiles[i][j].tile1.x*16), (stage_data.stages[dataExchanger->currentStage].maps[dataExchanger->currentMap].tiles[i][j].tile1.y*16)), QSize(16, 16));
 				painter.drawImage(target, image, source);
 			}
-			// level two
-			if (stage_data.stages[dataExchanger->currentStage].maps[dataExchanger->currentMap].tiles[i][j].tile2.x != -1 && stage_data.stages[dataExchanger->currentStage].maps[dataExchanger->currentMap].tiles[i][j].tile2.y != -1) {
-				QRectF target(QPoint(i*16*_zoom, j*16*_zoom), QSize(16*_zoom, 16*_zoom));
-				QRectF source(QPoint((stage_data.stages[dataExchanger->currentStage].maps[dataExchanger->currentMap].tiles[i][j].tile2.x*16), (stage_data.stages[dataExchanger->currentStage].maps[dataExchanger->currentMap].tiles[i][j].tile2.y*16)), QSize(16, 16));
-				painter.drawImage(target, image, source);
-			}
 			// leval 3
 			if (stage_data.stages[dataExchanger->currentStage].maps[dataExchanger->currentMap].tiles[i][j].tile3.x != -1 && stage_data.stages[dataExchanger->currentStage].maps[dataExchanger->currentMap].tiles[i][j].tile3.y != -1) {
 				QRectF target(QPoint(i*16*_zoom, j*16*_zoom), QSize(16*_zoom, 16*_zoom));

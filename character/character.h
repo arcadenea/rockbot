@@ -8,11 +8,13 @@
 #include <map>
 
 // local includes
-#include "st_hitPoints.h"
-#include "st_common.h"
-#include "st_characterState.h"
+#include "file/format/st_hitPoints.h"
+#include "file/format/st_common.h"
+#include "file/format/st_characterState.h"
 #include "graphicslib.h"
 #include "projectilelib.h"
+#include "character/movement/jump.h"
+#include "character/movement/inertia.h"
 
 extern graphicsLib graphLib; /**< TODO */
 
@@ -36,7 +38,7 @@ struct object_colision;
  *
  */
 struct st_spriteFrame {
-    unsigned short int delay; // time in milisseconds this frame will be shown /**< TODO */
+    int delay; // time in milisseconds this frame will be shown /**< TODO */
     graphicsLib_gSurface frameSurface; /**< TODO */
 	st_spriteFrame() {
 		frameSurface.gSurface = NULL;
@@ -269,7 +271,7 @@ public:
      *
      * @param damage_points
      */
-    void damage(unsigned int damage_points, bool ignore_hit_timer);
+    virtual void damage(unsigned int damage_points, bool ignore_hit_timer);
     /**
      * @brief
      *
@@ -285,15 +287,15 @@ public:
     /**
      * @brief
      *
-     * @return unsigned short
+     * @return Uint8
      */
-    unsigned short int get_current_hp() const;
+    Uint8 get_current_hp() const;
     /**
      * @brief
      *
      * @param inc
      */
-    void set_current_hp(unsigned short int inc);
+    void set_current_hp(Uint8 inc);
     /**
      * @brief
      *
@@ -408,13 +410,17 @@ public:
      * @param boss_demo_mode
      * @return bool
      */
+
+
+    void reset_gravity_speed();
+
     bool gravity(bool boss_demo_mode);							// returns true if finished (reached ground)
     /**
      * @brief
      *
      * @return bool
      */
-    const bool hit_ground() const;
+    bool hit_ground();
     /**
      * @brief
      *
@@ -472,14 +478,14 @@ public:
      */
     bool is_using_circle_weapon();
 
+    void inc_effect_weapon_status();
+
 
     void set_animation_type(enum ANIM_TYPE type);
 
     void set_show_hp(bool show);
 
     void set_progressive_appear_pos(int pos);
-
-    void set_progressive_appear_direction(int direction);
 
     /**
      * @brief
@@ -490,13 +496,24 @@ public:
 
     void clean_character_graphics_list();
 
+    void cancel_slide();
+
+    virtual int get_hit_push_back_n();
+
+    virtual bool have_super_shot();
+
+    virtual bool have_laser_shot();
+
+    virtual bool have_shoryuken();
 
 protected:
     /**
      * @brief
      *
      */
-    virtual void attack(bool dont_update_colors = false);
+    // updown_trajectory: updown -1 is down, 0 is none, 1 is up
+    // auto_charged: true will use charged (if have) or semi-charged as default projetile
+    virtual void attack(bool dont_update_colors, short updown_trajectory, bool auto_charged);
     /**
      * @brief
      *
@@ -531,7 +548,11 @@ protected:
      * @param mapScrolling
      * @return short
      */
-    short int map_colision(const short int incx, const short int incy, st_position mapScrolling);
+    st_map_colision map_colision(const short int incx, const short int incy, st_position mapScrolling);
+
+
+    bool is_on_teleporter_capsulse(object* object);
+
     /**
      * @brief
      *
@@ -551,6 +572,8 @@ protected:
      * @return bool
      */
     bool process_special_map_points(int map_lock, int incx, int incy, st_position map_pos);
+
+    void check_platform_move(short map_lock);
 
     /**
      * @brief
@@ -592,6 +615,10 @@ protected:
      * @return bool
      */
     bool is_in_stairs_frame() const; // indicates if the character is on some of the STAIRS animation types
+
+
+    bool is_on_attack_frame();
+
     /**
      * @brief
      *
@@ -624,25 +651,32 @@ protected:
      */
     void advance_to_last_frame();
 
-    virtual void show_hp(); // player nad boss will implement this
+    virtual void show_hp(); // player and boss will implement this
 
     int is_executing_effect_weapon(); // returns type, or -1 if none
 
+    st_position get_int_position(); // converts float position to integer position
 
+    void check_reset_stand();
+
+    bool is_weak_to_freeze();                           // checks that this NPC is weak against the freeze weapon
+
+    virtual bool can_air_dash();
+
+    short get_projectile_max_shots();
 
 
 // members
 public:
 	// projectile list
     std::vector<projectile> projectile_list; /**< TODO */
-	//struct st_spriteFrame sprite_list[ANIM_DIRECTION_COUNT][ANIM_TYPE_COUNT][ANIM_FRAMES_COUNT]; // TODO - move to protected
+    //struct st_spriteFrame sprite_list[CHAR_ANIM_DIRECTION_COUNT][ANIM_TYPE_COUNT][ANIM_FRAMES_COUNT]; // TODO - move to protected
 
 
 protected:
 	// members static that can be moved to use game_data
     std::string name; /**< TODO */
     struct st_size frameSize; /**< TODO */
-    int max_jump; // maximum reach of the jump /**< TODO */
     unsigned int max_projectiles; // maximum number of simultaneuous projectiles the character can shot /**< TODO */
     short move_speed; // how many pixels the character moves by cycle (default value) /**< TODO */
     short _fractional_move_speed; // indicates we need to move an extra pixel even "n" times
@@ -669,6 +703,7 @@ protected:
     int charging_color_n; // holds information used when changing char colors on charging shot /**< TODO */
     unsigned int charging_color_timer; // holds information used when changing char colors on charging shot /**< TODO */
     bool jump_button_released; // indicates if jump button was released between jumps /**< TODO */
+    bool _dash_button_released; // indicates if dash button (or jump+down) was released between jumps /**< TODO */
     /**
      * @brief
      *
@@ -683,12 +718,11 @@ protected:
 
 
 	// DEBUG
-    int jump_steps; /**< TODO */
     int hit_moved_back_n; /**< TODO */
 	// external members
 
 	// TODO - graphics list map, used in order to avoid duplication of graphics
-    static std::map<std::string, st_spriteFrame[ANIM_DIRECTION_COUNT][ANIM_TYPE_COUNT][ANIM_FRAMES_COUNT]> character_graphics_list; /**< TODO */
+    static std::map<std::string, st_spriteFrame[CHAR_ANIM_DIRECTION_COUNT][ANIM_TYPE_COUNT][ANIM_FRAMES_COUNT]> character_graphics_list; /**< TODO */
     static std::map<std::string, graphicsLib_gSurface> _character_graphics_background_list; /**< TODO */
     static std::map<std::string, bool> _character_have_right_graphic; /**< TODO */
 
@@ -721,8 +755,6 @@ protected:
     st_position _frame_pos_adjust; /**< TODO */
     bool _have_right_direction_graphics; /**< TODO */
     short _stairs_stopped_count; // used to prevent stopping stairs animation because of a single frame without player input /**< TODO */
-    float _jump_accel; // used to determine acceleration of jump. players use the jump_gravity property for this, NPCs can change this according to it's AI jump type
-    int _touch_damage_reductor;
     short _charged_shot_projectile_id;
     short _hit_move_back_dist;
     bool _was_animation_reset;                               // inform that animation "looped" once
@@ -734,9 +766,16 @@ protected:
     bool _always_move_ahead;                                // indicates to character class that the AI is to always move on
     bool _check_always_move_ahead;                          // used to prevent setting _always_move_ahead each time we can AI exec
     int _progressive_appear_pos;                            // used by spawn-npc to show just a part of the NPC
-    int _progressive_appear_direction;                      // direction the NPC will appear from-to
     bool _is_stage_boss;                                    // used in NPC class. Indicates if this is the stage-boss
     bool _dropped_from_stairs;                              // used to avoid grabbing stairs again when dropped from it
+    classjump _obj_jump;
+    short _jumps_number;                                    // used for double or triple jumping
+    short _damage_modifier;                                 // used in players
+    st_float_position _previous_position;                   // this is used so we can avoid calculating things like hit_gound() if position did not changed
+    bool _hit_ground;
+    inertia _inertia_obj;                                   // handles inertia over ice
+    bool _dashed_jump;                                      // adds horizontal acceleration fo X movement if jump was made during a dash (not slide) until player reaches ground again
+    bool _can_execute_airdash;                                 // prevents dashing multiple-times in middle-air
 
 };
 

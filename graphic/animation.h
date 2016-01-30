@@ -2,7 +2,7 @@
 #define ANIMATION_H
 
 #include <string>
-#include "st_common.h"
+#include "file/format/st_common.h"
 #include "graphicslib.h"
 
 /**
@@ -42,18 +42,18 @@ private:
     st_float_position _static_pos;
     st_position _adjust_pos; /**< TODO */
     graphicsLib_gSurface* _surface; /**< holds graphic surface */
-    unsigned short int _repeat_times; /**< number of times the whole frames will be shown */
-    unsigned short int _executed_times; /**< holds the number of times the whole frames were shown. if greater or equals to _repeat_times, set is_finished to true */
-    unsigned short int _frame_time; /**< TODO */
+    Uint8 _repeat_times; /**< number of times the whole frames will be shown */
+    Uint8 _executed_times; /**< holds the number of times the whole frames were shown. if greater or equals to _repeat_times, set is_finished to true */
+    int _frame_time; /**< TODO */
     bool _finished; /**< TODO */
     int _frames_number; /**< TODO */
     int _direction; /**< TODO */
     st_size _framesize; /**< TODO */
 
-    unsigned short int _current_frame; /**< TODO */
-    unsigned short int _current_frame_timer; /**< TODO */
-    unsigned short int _max_repeat; /**< TODO */
-    unsigned short int _repeated_times; /**< TODO */
+    Uint8 _current_frame; /**< TODO */
+    int _current_frame_timer; /**< TODO */
+    Uint8 _max_repeat; /**< TODO */
+    Uint8 _repeated_times; /**< TODO */
     st_position* _map_scroll; /**< TODO */
 };
 
@@ -70,7 +70,7 @@ private:
     int _width;
     int _timer;
     int _max_frames;
-    unsigned short _frame_n;
+    Uint8 _frame_n;
     st_position _pos;
     graphicsLib_gSurface _surface;
 

@@ -2,15 +2,43 @@
 # Project created by QtCreator 2009-12-03T12:16:29
 # -------------------------------------------------
 
-CONFIG += win32
-#CONFIG += linux
+#CONFIG += win32
+CONFIG += linux
+#CONFIG += macosx
 
-QMAKE_CCFLAGS += -std=c++0x
-QMAKE_CXXFLAGS += -std=c++0x
-CXXFLAGS += -std=c++0x
+QT += widgets
 
+macosx {
+        QMAKE_LIBS_QT =
+        QMAKE_LIBS_QT_THREAD =
+
+    QMAKE_CXX = /usr/local/bin/g++-4.8
+    QMAKE_LINK = /usr/local/bin/g++-4.8
+    QMAKE_CXXFLAGS += -I/usr/local/Trolltech/Qt-4.8.6/include -I/usr/local/Trolltech/Qt-4.8.6/include/QtGui -DMACOSX
+
+
+    QT = core gui
+    LIBS += -static-libgcc -static-libstdc++ /usr/local/Trolltech/Qt-4.8.6/lib/libQtCore.a /usr/local/Trolltech/Qt-4.8.6/lib/libQtGui.a -lz -framework Carbon
+    QMAKE_LFLAGS -= -framework QtGui
+    QMAKE_CFLAGS_PPC_64             -= -arch ppc64 -Xarch_ppc64 -mmacosx-version-min=10.5
+    QMAKE_OBJECTIVE_CFLAGS_PPC_64   -= -arch ppc64 -Xarch_ppc64 -mmacosx-version-min=10.5
+    QMAKE_CFLAGS_X86_64             -= -Xarch_x86_64 -mmacosx-version-min=10.5
+    QMAKE_OBJECTIVE_CFLAGS_X86_64   -= -Xarch_x86_64 -mmacosx-version-min=10.5
+    QMAKE_CXXFLAGS_PPC_64           -= -arch ppc64 -Xarch_ppc64 -mmacosx-version-min=10.5
+    QMAKE_CXXFLAGS_X86_64           -= -Xarch_x86_64 -mmacosx-version-min=10.5
+    QMAKE_LFLAGS_PPC_64             -= -arch ppc64 -Xarch_ppc64 -mmacosx-version-min=10.5
+    QMAKE_LFLAGS_X86_64             -= -Xarch_x86_64 -mmacosx-version-min=10.5
+}
+
+linux {
+    QMAKE_CCFLAGS += -std=c++0x
+    QMAKE_CXXFLAGS += -std=c++0x
+}
 
 win32 {
+    QMAKE_CCFLAGS += -std=c++0x
+    QMAKE_CXXFLAGS += -std=c++0x
+    CXXFLAGS += -std=c++0x
     LIBS = -lmingw32 -mwindows -lqtmaind
     QT += core gui
     QMAKE_CCFLAGS += -DWIN32
@@ -49,12 +77,21 @@ SOURCES += main.cpp \
     mainwindow_tab/map_tab.cpp \
     ../file/convert.cpp \
     stage_swap_dialog.cpp \
-    mainwindow_tab/player_edit.cpp
+    mainwindow_tab/player_edit.cpp \
+    scenes/sceneeditorwindow.cpp \
+    scenes/sceneslist.cpp \
+    scenes/tab_text.cpp \
+    mainwindow_tab/animtitle.cpp \
+    mainwindow_tab/armor_edit.cpp \
+    aboutwindow.cpp \
+    ../tools/tinyxml2/tinyxml2.cpp \
+    scenes/tab_image.cpp \
+    ../file/fio_scenes.cpp
+
 HEADERS += mainwindow.h \
     editorarea.h \
     editortilepallete.h \
     mediator.h \
-    defines.h \
     addwizard.h \
     addwizard.h \
     npcpreviewarea.h \
@@ -81,7 +118,24 @@ HEADERS += mainwindow.h \
     mainwindow_tab/map_tab.h \
     ../file/convert.h \
     stage_swap_dialog.h \
-    mainwindow_tab/player_edit.h
+    mainwindow_tab/player_edit.h \
+    scenes/sceneeditorwindow.h \
+    scenes/sceneslist.h \
+    scenes/tab_text.h \
+    mainwindow_tab/animtitle.h \
+    mainwindow_tab/armor_edit.h \
+    ../defines.h \
+    ../file/format/st_characterState.h \
+    ../file/format/st_common.h \
+    ../file/format/st_hitPoints.h \
+    ../file/format/st_platform.h \
+    ../file/format/st_projectile.h \
+    ../file/format/st_teleporter.h \
+    ../file/version.h \
+    aboutwindow.h \
+    ../tools/tinyxml2/tinyxml2.h \
+    scenes/tab_image.h
+
 FORMS += mainwindow.ui \
     addwizard.ui \
     loadgamepicker.ui \
@@ -98,7 +152,13 @@ FORMS += mainwindow.ui \
     mainwindow_tab/game_properties_tab.ui \
     mainwindow_tab/map_tab.ui \
     stage_swap_dialog.ui \
-    mainwindow_tab/player_edit.ui
+    mainwindow_tab/player_edit.ui \
+    scenes/sceneeditorwindow.ui \
+    scenes/sceneslist.ui \
+    scenes/tab_text.ui \
+    mainwindow_tab/armor_edit.ui \
+    aboutwindow.ui \
+    scenes/tab_image.ui
 RESOURCES += resources/icons/icons.qrc
 CONFIG += console
 INCLUDEPATH += ../common

@@ -1,5 +1,3 @@
-#include <iostream>
-
 #ifdef WII
 #include <fat.h>
 #endif
@@ -15,16 +13,22 @@
 #include <SDL_screenkeyboard.h>
 #endif
 
+#ifdef OSX
+#include <mach-o/dyld.h>
+#endif
+
 #ifdef DREAMCAST
 #include <kos.h>
 #endif
 
+#include <iostream>
 #include <SDL/SDL.h>				//Include da SDL
 #include <SDL/SDL_image.h>		//Include da biblioteca SDL_Image
 #include <SDL/SDL_mixer.h>	// Include da biblioteca SDL_Mixer
 #include <SDL/SDL_ttf.h>		// Include da biblioteca SDL_ttf
 #include <SDL/SDL_endian.h>
 #include <SDL/SDL_mixer.h>
+
 
 
 // ************** CODE AND DEBUG flags ************** //
@@ -40,7 +44,7 @@ std::string SAVEPATH;
 SDL_Event event;
 bool have_save = false;
 
-
+#include "defines.h"
 #include "graphicslib.h"
 #include "graphic/draw.h"
 #include "inputlib.h"
@@ -49,7 +53,7 @@ bool have_save = false;
 #include "game.h"
 #include "scenes/ending.h"
 
-#if defined(LINUX)
+#if defined(LINUX) || defined(OSX)
     #include <errno.h>
     #include <sys/stat.h>
     #include <unistd.h>
@@ -86,6 +90,10 @@ game gameControl;
 CURRENT_FILE_FORMAT::st_save game_save;
 struct CURRENT_FILE_FORMAT::st_game_config game_config;
 bool GAME_FLAGS[FLAG_COUNT];
+
+int default_keys_codes[BTN_COUNT]; // number indicator for the keyboard-keys
+int default_button_codes[BTN_COUNT]; // number indicator for the keyboard-keys
+
 
 #include "file/file_io.h"
 CURRENT_FILE_FORMAT::file_io fio;
@@ -211,6 +219,13 @@ void get_filepath()
         FILEPATH += "/";
     }
     delete[] buffer;
+#elif defined OSX
+    char path[1024];
+    uint32_t size = sizeof(path);
+    if (_NSGetExecutablePath(path, &size) == 0) {
+        FILEPATH = std::string(path);
+        FILEPATH = FILEPATH.substr(0, FILEPATH.length()-7);
+    }
 #else
     char *buffer = new char[MAXPATHLEN];
     getcwd(buffer, MAXPATHLEN);
@@ -234,12 +249,14 @@ void get_filepath()
 
     #if defined(PLAYSTATION2) && defined(PS2LOADFROMFIXEDPOINT) // DEBUG
         FILEPATH = "mass:/PS2/Rockbot/";
+    #elif WII
+        FILEPATH = "sd:/apps/Rockbot/";
+        printf("MAIN #D\n");
     #endif
-
+    std::cout << "get_filepath - FILEPATH:" << FILEPATH << std::endl;
 	#ifdef DREAMCAST
 		FILEPATH = "/cd/";
 	#endif
-
 
 }
 
@@ -314,7 +331,7 @@ int main(int argc, char *argv[])
 
 #ifdef PSP
     SetupCallbacks();
-    scePowerSetClockFrequency(333, 333, 166);
+    //scePowerSetClockFrequency(333, 333, 166);
 #endif
 
     for (int i=0; i<FLAG_COUNT; i++) {
@@ -338,6 +355,7 @@ int main(int argc, char *argv[])
     get_filepath();
     // fallback in case getcwd returns null
     if (FILEPATH.size() == 0) {
+        std::cout << "Could not read path, fallback to using argv" << std::endl;
         FILEPATH = argvString.substr(0, argvString.size()-EXEC_NAME.size());
     }
     std::cout << "main - argvString: '" << argvString << "', FILEPATH: '" << FILEPATH << "'" << std::endl; std::fflush(stdout);
@@ -417,11 +435,39 @@ int main(int argc, char *argv[])
 				GAME_FLAGS[FLAG_ALLWEAPONS] = true;
 			} else if (temp_argv == "--infinitejump") { // player can jump again and again
 				GAME_FLAGS[FLAG_INFINITE_JUMP] = true;
-			}
+            } else if (temp_argv == "--rockbot") {
+                GAME_FLAGS[FLAG_PLAYER_ROCKBOT] = true;
+            } else if (temp_argv == "--betabot") {
+                GAME_FLAGS[FLAG_PLAYER_BETABOT] = true;
+            } else if (temp_argv == "--candybot") {
+                GAME_FLAGS[FLAG_PLAYER_CANDYBOT] = true;
+            } else if (temp_argv == "--kittybot") {
+                GAME_FLAGS[FLAG_PLAYER_KITTYBOT] = true;
+            }
 		}
 	}
 
-    std::cout << "PS2.DEBUG #7" << std::endl; std::fflush(stdout);
+    /// DEBUG ///
+    //GAME_FLAGS[FLAG_QUICKLOAD] = true;
+
+    // PS2 version have to load config AFTER SDL_Init due to SDK issues
+    #ifdef LINUX
+        SAVEPATH = std::string(getenv("HOME")) + "/.rockbot/";
+        mkdir(SAVEPATH.c_str(), 0777);
+        //std::cout << "SAVEPATH: " << SAVEPATH << ", mkdir-res: " << res << ", errno: " << errno << std::endl;
+    #elif WIN32
+        SAVEPATH =  std::string(getenv("APPDATA")) + "/rockbot";
+        std::cout << "SAVEPATH: " << SAVEPATH << std::endl;
+        _mkdir(SAVEPATH.c_str());
+    #elif DREAMCAST
+        SAVEPATH = "/vmu/a1";
+
+    #else
+        SAVEPATH = FILEPATH;
+    #endif
+
+
+        std::cout << "SAVEPATH: " << SAVEPATH << std::endl;
 
     fio.check_conversion();
 	fio.read_game(game_data);
@@ -433,22 +479,7 @@ int main(int argc, char *argv[])
     gameControl.get_drop_item_ids();
 	soundManager.init_audio_system();
 
-// PS2 version have to load config AFTER SDL_Init due to SDK issues
-#ifdef LINUX
-    SAVEPATH = std::string(getenv("HOME")) + "/.rockbot/";
-    mkdir(SAVEPATH.c_str(), 0777);
-    //std::cout << "SAVEPATH: " << SAVEPATH << ", mkdir-res: " << res << ", errno: " << errno << std::endl;
-#elif WIN32
-    SAVEPATH =  std::string(getenv("APPDATA")) + "/rockbot";
-    std::cout << "SAVEPATH: " << SAVEPATH << std::endl;
-    _mkdir(SAVEPATH.c_str());
-#elif DREAMCAST
-    SAVEPATH = "/vmu/a1";
-    std::cout << "SAVEPATH: " << SAVEPATH << std::endl;
 
-#else
-    SAVEPATH = FILEPATH;
-#endif
 
 #ifndef PLAYSTATION2
     fio.load_config(game_config);
@@ -498,7 +529,7 @@ int main(int argc, char *argv[])
 #endif
     draw_lib.preload();
 
-    gameControl.currentStage = MUMMYBOT;
+    gameControl.currentStage = INTRO_STAGE;
 
 
 
@@ -524,23 +555,31 @@ int main(int argc, char *argv[])
 
     bool run_game = true;
 
-
-
     while (run_game) {
+        #if !defined(DINGUX)
+            timer.start_ticker();
+        #endif
+
+
 		#ifdef PLAYSTATION2
 			RotateThreadReadyQueue(_MIXER_THREAD_PRIORITY);
         #endif
-		input.readInput();
+
+
 		gameControl.showGame();
 #ifdef DEBUG_SHOW_FPS
         gameControl.fps_count();
 #endif
         draw_lib.update_screen();
         if (input.p1_input[BTN_QUIT] == 1) {
-            //std::cout << "LEAVE #3" << std::endl;
             std::fflush(stdout);
             gameControl.leave_game();
         }
+        unsigned int now_ticks = timer.get_ticks();
+        if (now_ticks < (1000 / FRAMES_PER_SECOND)) {
+            timer.delay((1000 / FRAMES_PER_SECOND) - now_ticks);
+        }
+
     }
 	/// @TODO: sdl quit sub-systems
 
@@ -570,3 +609,4 @@ JNIEXPORT void JNICALL Java_net_upperland_rockbot_DemoRenderer_nativeInit(JNIEnv
 }
 
 #endif
+

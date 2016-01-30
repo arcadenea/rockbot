@@ -20,7 +20,6 @@ public:
 	static void fill_files_combo(std::string directory, QComboBox* combo, bool show_none=false);
     static void fill_graphicfiles_listwidget(std::string directory, QListWidget* listWidget);
     static void fill_graphicfiles_combobox(std::string directory, QComboBox* comboWidget);
-    static void fill_iatypes_combo(QComboBox* combo);
     static void fill_npc_combo(QComboBox* combo);
 	static void fill_object_combo(QComboBox* combo);
 	static void fill_weapons_combo(QComboBox* combo);

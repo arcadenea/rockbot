@@ -13,6 +13,10 @@ extern inputLib input;
 #include "graphic/draw.h"
 extern draw draw_lib;
 
+#include "timerlib.h"
+extern timerLib timer;
+
+
 #include "graphic/option_picker.h"
 
 
@@ -26,19 +30,28 @@ dialogs::dialogs() : is_showing_dialog_bg(false)
 {
     /// @TODO - temporary configurations should not be placed in st_config
     //if (game_config.two_players == 2 || game_config.selected_player == 1) {
-    if (game_save.selected_player == 1) {
+
+    //std::cout << "DIALOGS::CONSTRUCTOR - " << game_save.selected_player << std::endl;
+
+    if (game_save.selected_player == PLAYER_ROCKBOT) {
 		player_name = "Rockbot";
 		player_face = "rockbot.png";
-	} else {
+    } else if (game_save.selected_player == PLAYER_BETABOT) {
 		player_name = "Betabot";
 		player_face = "betabot.png";
-	}
+    } else if (game_save.selected_player == PLAYER_CANDYBOT) {
+        player_name = "Candybot";
+        player_face = "candybot.png";
+    } else if (game_save.selected_player == PLAYER_KITTYBOT) {
+        player_name = "Kittybot";
+        player_face = "kittybot.png";
+    }
 }
 
 
 void dialogs::show_stage_dialog()
 {
-    //std::cout << "DEBUG - dialogs::show_stage_dialog::stage: " << stage << ", player_n: " << (game_config.selected_player-1) << std::endl;
+    //std::cout << "DEBUG - dialogs::show_stage_dialog::stage: " << stage << ", player_n: " << (game_config.selected_player) << std::endl;
     if (strlen(stage_data.intro_dialog.face_graphics_filename) <= 0) {
 		return;
 	}
@@ -53,9 +66,9 @@ void dialogs::show_stage_dialog()
 	}
     show_dialog(stage_data.intro_dialog.face_graphics_filename, stage_data.intro_dialog.top_side, lines, true);
 	for (int i=0; i<3; i++) {
-        lines[i] = std::string(stage_data.intro_dialog.answer1[game_save.selected_player-1][i]);
+        lines[i] = std::string(stage_data.intro_dialog.answer1[game_save.selected_player][i]);
 	}
-    show_dialog(game_data.players[game_save.selected_player-1].face_filename, stage_data.intro_dialog.top_side, lines, true); /// @TODO: create "extern" for player number
+    show_dialog(game_data.players[game_save.selected_player].face_filename, stage_data.intro_dialog.top_side, lines, true); /// @TODO: create "extern" for player number
     if (strlen(stage_data.intro_dialog.line2[0]) > 0) {
 		for (int i=0; i<3; i++) {
             lines[i] = std::string(stage_data.intro_dialog.line2[i]);
@@ -82,11 +95,11 @@ void dialogs::show_boss_dialog()
     show_dialog(stage_data.boss.face_graphics_filename, stage_data.boss_dialog.top_side, lines, true);
 
     for (int i=0; i<3; i++) {
-        lines[i] = std::string(stage_data.boss_dialog.answer1[game_save.selected_player-1][i]);
+        lines[i] = std::string(stage_data.boss_dialog.answer1[game_save.selected_player][i]);
 	}
 
     if (lines[0].size() > 0) {
-        show_dialog(game_data.players[game_save.selected_player-1].face_filename, stage_data.boss_dialog.top_side, lines, true); /// @TODO: create "extern" for player number
+        show_dialog(game_data.players[game_save.selected_player].face_filename, stage_data.boss_dialog.top_side, lines, true); /// @TODO: create "extern" for player number
     } else {
         return;
     }
@@ -109,6 +122,8 @@ void dialogs::show_dialog(std::string face_file, bool top_side, std::string line
         return;
     }
 
+    timer.pause();
+
 	draw_dialog_bg(show_btn);
     draw_lib.update_screen();
 	st_position dialog_pos = graphLib.get_dialog_pos();
@@ -129,6 +144,8 @@ void dialogs::show_dialog(std::string face_file, bool top_side, std::string line
 	}
 
     input.wait_keypress();
+    timer.unpause();
+
 }
 
 bool dialogs::show_leave_game_dialog() const
@@ -136,6 +153,8 @@ bool dialogs::show_leave_game_dialog() const
     bool res = false;
     bool repeat_menu = true;
     int picked_n = -1;
+
+    timer.pause();
 
     graphicsLib_gSurface bgCopy;
     graphLib.initSurface(st_size(RES_W, RES_H), &bgCopy);
@@ -165,14 +184,17 @@ bool dialogs::show_leave_game_dialog() const
     input.waitTime(200);
     graphLib.copyArea(st_position(0, 0), &bgCopy, &graphLib.gameScreen);
     draw_lib.update_screen();
+    timer.unpause();
     return res;
 }
 
-void dialogs::show_timed_dialog(std::string face_file, bool is_left, std::string lines[], short timer, bool show_btn=true)
+void dialogs::show_timed_dialog(std::string face_file, bool is_left, std::string lines[], short delay, bool show_btn=true)
 {
     UNUSED(is_left);
 	std::string temp_text;
 	char temp_char;
+
+    timer.pause();
 
 	draw_dialog_bg(show_btn);
     draw_lib.update_screen();
@@ -193,8 +215,10 @@ void dialogs::show_timed_dialog(std::string face_file, bool is_left, std::string
 			input.waitTime(15);
 		}
 	}
-	input.waitTime(timer);
+    input.waitTime(delay);
+    timer.unpause();
 }
+
 
 
 
@@ -207,3 +231,58 @@ void dialogs::draw_dialog_bg(bool show_btn=true)
 	graphLib.show_dialog(1, show_btn);
 }
 
+/*
+void armor_edit::fill_armor_abilities() {
+    std::string arm_abilities[] = {"Super-Shot", "Laser-Beam", "Always-Charged", "Freeze"};
+    std::string legs_abilities[] = {"Double Jump", "Air-Dash", "Wall-Grab"};
+    std::string body_abilities[] = {"Half-Damage", "Extended Imunnity", "Spikes Immune", "No Push-Back"};
+ */
+void dialogs::showGotArmorDialog(e_ARMOR_PIECES armor_type)
+{
+    std::string type_str = "???";
+    std::string ability_str = "???";
+
+    //std::cout << ">> showGotArmorDialog - p4.arms: " << game_data.armor_pieces[game_save.selected_player].special_ability[ARMOR_ARMS] << std::endl;
+
+    int type = game_data.armor_pieces[armor_type].special_ability[game_save.selected_player];
+    //std::cout << "player: " << game_save.selected_player << ", armor_type: " << armor_type << ", armor.ability: " << type << std::endl;
+    if (armor_type == ARMOR_ARMS) {
+        type_str = "THIS IMPROVED ARMS WILL";
+        if (type == ARMOR_ABILITY_ARMS_ALWAYSCHARGED) {
+            ability_str = "FIRE ALWAYS CHARGED.";
+        } else if (type == ARMOR_ABILITY_ARMS_LASERBEAM) {
+            ability_str = "CHARGE A LASER BEAM";
+        } else if (type == ARMOR_ABILITY_ARMS_SUPERSHOT) {
+            ability_str = "FIRE A SUPER-SHOT!";
+        } else if (type == ARMOR_ABILITY_ARMS_MISSILE) {
+            ability_str = "THROW A HADOUKEN.";
+        }
+    } else if (armor_type == ARMOR_LEGS) {
+        if (type == ARMOR_ABILITY_LEGS_AIRDASH) {
+            type_str = "THOSE LIGHTER LEGS";
+            ability_str = "DASH IN MIDDLE-AIR.";
+        } else if (type == ARMOR_ABILITY_LEGS_DOUBLEJUMP) {
+            type_str = "THOSE LIGHTER LEGS";
+            ability_str = "EXECUTE DOUBLE JUMP.";
+        } else if (type == ARMOR_ABILITY_LEGS_SHORYUKEN) {
+            type_str = "HOLD UP AND DASH";
+            ability_str = "TO SHURYUKEN!";
+        }
+    } else {
+        type_str = "THIS FORTIFIED BODY WILL";
+        if (type == ARMOR_ABILITY_BODY_EXTENDEDIMMUNITY) {
+            ability_str = "BE INTANGIBLE MORE TIME.";
+        } else if (type == ARMOR_ABILITY_BODY_HALFDAMAGE) {
+            ability_str = "TAKE HALF DAMAGE.";
+        } else if (type == ARMOR_ABILITY_BODY_NOPUSHBACK) {
+            ability_str = "RESIST PUSH-BACK.";
+        } else if (type == ARMOR_ABILITY_BODY_SPIKESIMMMUNE) {
+            ability_str = "RESIST SPIKES.";
+        }
+    }
+
+
+
+    std::string lines[] = {type_str, "GIVE YOU THE ABILITY TO", ability_str};
+    show_dialog("canotus_face.png", true, lines, true);
+}

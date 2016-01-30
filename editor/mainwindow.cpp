@@ -12,7 +12,7 @@
 #include <QList>
 #include <QListWidgetItem>
 #include "../defines.h"
-
+#include "../file/version.h"
 
 
 #include "common.h"
@@ -29,66 +29,65 @@ bool background_filled = false;
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWindow), _npcedit_tab_selectednpc(0), _data_loading(false)
 {
 	ui->setupUi(this);
+    QString window_title = QString("Rockbot Editor ") + QString(VERSION_NUMBER);
+    setWindowTitle(window_title);
 	dataExchanger->loadGame(1);
-	// add maps to the list
 
-    //QStandardItem games("GAMES");
-
-    //QStandardItem npcs("NPCs");
-    //npcs.setEditable(FALSE);
-    //QStandardItem npc1("NPC 001");
-    //npc1.setEditable(FALSE);
-    //npcs.appendRow(&npc1);
-
-    //model.appendRow(&games);
-    //model.appendRow(&npcs);
-    //model.setHeaderData(0, Qt::Horizontal, "Item List");
 
 	// insert NPC tab form
 	npc_edit_tab = new npc_edit();
-	ui->npc_tab->layout()->addWidget(npc_edit_tab);
+    ui->NPCScrollArea->setWidget(npc_edit_tab);
+
 
 	// insert AI tab form
 	ai_edit_tab = new artificial_inteligence_tab();
-	ui->ai_tab->layout()->addWidget(ai_edit_tab);
+    ui->AIScrollArea->setWidget(ai_edit_tab);
 
 	// insert OBJECT tab form
 	object_edit_tab = new object_tab();
-	ui->object_tab->layout()->addWidget(object_edit_tab);
+    ui->ObjectScrollArea->setWidget(object_edit_tab);
 
 
 	// insert OBJECT tab form
 	weapon_edit_tab = new weapon_edit();
-	ui->weapon_edit_tab->layout()->addWidget(weapon_edit_tab);
+    ui->WeaponScrollArea->setWidget(weapon_edit_tab);
 
 	// insert STAGE tab form
 	stage_edit_tab = new stage_edit();
-	ui->stage_tab->layout()->addWidget(stage_edit_tab);
+    ui->StagesScrollarea->setWidget(stage_edit_tab);
 
     // insert PROJECTILE tab form
     projectile_edit_tab = new projectile_edit();
-	ui->tab_projectiles->layout()->addWidget(projectile_edit_tab);
+    ui->ProjectileScrollArea->setWidget(projectile_edit_tab);
 
 
 	// insert COLORCYCLE tab form
 	colorcycle_edit_tab = new colorcycle_edit();
-	ui->colorcycle_tab->layout()->addWidget(colorcycle_edit_tab);
+    ui->ColorcycleScrollArea->setWidget(colorcycle_edit_tab);
 
     // insert GAME_PROPERTIES tab form
     game_prop_tab = new game_properties_tab();
-    ui->game_tab->layout()->addWidget(game_prop_tab);
+    ui->gamePropertiesScrollarea->setWidget(game_prop_tab);
 
     map_edit_tab = new map_tab();
-    ui->maps_tab->layout()->addWidget(map_edit_tab);
+    ui->MapScrollArea->setWidget(map_edit_tab);
 
 
     player_edit_tab = new player_edit();
-    ui->player_tab->layout()->addWidget(player_edit_tab);
+    ui->PlayerScrollArea->setWidget(player_edit_tab);
+
+    armor_edit_tab = new armor_edit();
+    ui->armorScrollArea->setWidget(armor_edit_tab);
+
+    scenes_window = NULL;
 }
 
 MainWindow::~MainWindow()
 {
 	delete ui;
+    if (scenes_window != NULL) {
+        delete scenes_window;
+    }
 }
 
 
@@ -122,15 +121,6 @@ void MainWindow::on_pallete_signalPalleteChanged()
 	printf("DEBUG on_pallete_signalPalleteChanged\n");
 }
 
-/*
-void MainWindow::on_addNpcButton_clicked()
-{
-	printf("DEBUG.MainWindow::on_addNpcButton_clicked - NpcAddNumber: '%d'\n", dataExchanger->NpcAddNumber);
-	dataExchanger->editMode = EDITMODE_ADDNPC;
-}
-*/
-
-
 
 
 void MainWindow::on_actionNew_triggered()
@@ -143,76 +133,7 @@ void MainWindow::on_actionNew_triggered()
 
 
 
-void MainWindow::on_actionLock_Edit_triggered()
-{
-	if (ui->actionLock_Edit->isChecked()) {
-		ui->actionNormal_Edit->setChecked(FALSE);
-		ui->actionEraser->setChecked(FALSE);
-		ui->actionFill->setChecked(FALSE);
-		ui->actionLink->setChecked(FALSE);
-		ui->actionStairs->setChecked(FALSE);
-        map_edit_tab->set_current_box(2);
-        dataExchanger->editTool = EDITMODE_LOCK;
-	// to make things simpler, we do not allow "uncheck" of the tool, you must pick another one to uncheck
-	} else {
-		ui->actionLock_Edit->setChecked(TRUE);
-	}
-}
 
-void MainWindow::on_actionNormal_Edit_triggered()
-{
-	if (ui->actionNormal_Edit->isChecked()) {
-		ui->actionLock_Edit->setChecked(FALSE);
-		ui->actionEraser->setChecked(FALSE);
-		ui->actionFill->setChecked(FALSE);
-		ui->actionLink->setChecked(FALSE);
-		ui->actionStairs->setChecked(FALSE);
-		dataExchanger->editTool = EDITMODE_NORMAL;
-        if (ui->actionEdit_Tileset->isChecked()) {
-            map_edit_tab->set_current_box(1);
-        } else if (ui->actionEdit_NPC->isChecked()) {
-            map_edit_tab->set_current_box(3);
-        } else if (ui->actionAdd_Object->isChecked()) {
-            map_edit_tab->set_current_box(5);
-        }
-	// to make things simpler, we do not allow "uncheck" of the tool, you must pick another one to uncheck
-	} else {
-		ui->actionNormal_Edit->setChecked(TRUE);
-	}
-}
-
-void MainWindow::on_actionEraser_triggered()
-{
-	if (ui->actionEraser->isChecked()) {
-		ui->actionLock_Edit->setChecked(FALSE);
-		ui->actionNormal_Edit->setChecked(FALSE);
-		ui->actionFill->setChecked(FALSE);
-		ui->actionLink->setChecked(FALSE);
-		ui->actionStairs->setChecked(FALSE);
-		dataExchanger->editTool = EDITMODE_ERASER;
-	// to make things simpler, we do not allow "uncheck" of the tool, you must pick another one to uncheck
-	} else {
-		ui->actionEraser->setChecked(TRUE);
-	}
-}
-
-
-
-
-void MainWindow::on_actionFill_triggered()
-{
-	if (ui->actionFill->isChecked()) {
-		ui->actionLock_Edit->setChecked(FALSE);
-		ui->actionNormal_Edit->setChecked(FALSE);
-		ui->actionEraser->setChecked(FALSE);
-		ui->actionLink->setChecked(FALSE);
-		ui->actionStairs->setChecked(FALSE);
-		dataExchanger->editTool = EDITMODE_FILL;
-	// to make things simpler, we do not allow "uncheck" of the tool, you must pick another one to uncheck
-	} else {
-		ui->actionFill->setChecked(TRUE);
-	}
-}
 
 
 void MainWindow::on_MainWindow_iconSizeChanged(QSize iconSize)
@@ -221,60 +142,10 @@ void MainWindow::on_MainWindow_iconSizeChanged(QSize iconSize)
 	saveGeometry();
 }
 
-void MainWindow::on_actionLink_triggered()
-{
-    map_edit_tab->set_current_box(4);
-	if (ui->actionLink->isChecked()) {
-		ui->actionLock_Edit->setChecked(FALSE);
-		ui->actionNormal_Edit->setChecked(FALSE);
-		ui->actionEraser->setChecked(FALSE);
-		ui->actionFill->setChecked(FALSE);
-		ui->actionStairs->setChecked(FALSE);
-		ui->actionAdd_Object->setChecked(FALSE);
-		dataExchanger->editTool = EDITMODE_LINK;
-        map_edit_tab->update_edit_area();
-	// to make things simpler, we do not allow "uncheck" of the tool, you must pick another one to uncheck
-	} else {
-		ui->actionFill->setChecked(TRUE);
-        map_edit_tab->update_edit_area();
-	}
-}
 
 
-void MainWindow::on_actionStairs_triggered()
-{
-	if (ui->actionStairs->isChecked()) {
-		ui->actionNormal_Edit->setChecked(FALSE);
-		ui->actionEraser->setChecked(FALSE);
-		ui->actionFill->setChecked(FALSE);
-		ui->actionLock_Edit->setChecked(FALSE);
-		ui->actionLink->setChecked(FALSE);
-		ui->actionAdd_Object->setChecked(FALSE);
-		dataExchanger->editTool = EDITMODE_STAIRS;
-	// to make things simpler, we do not allow "uncheck" of the tool, you must pick another one to uncheck
-	} else {
-		ui->actionStairs->setChecked(TRUE);
-	}
-    map_edit_tab->update_edit_area();
-}
 
 
-void MainWindow::on_actionAdd_Object_triggered()
-{
-    map_edit_tab->set_current_box(5);
-	ui->actionEdit_Tileset->setChecked(FALSE);
-	ui->actionEdit_NPC->setChecked(FALSE);
-	ui->actionNormal_Edit->setChecked(TRUE);
-	ui->actionEraser->setChecked(FALSE);
-	ui->actionFill->setChecked(FALSE);
-	ui->actionLock_Edit->setChecked(FALSE);
-	ui->actionLink->setChecked(FALSE);
-	ui->actionAdd_Object->setChecked(TRUE);
-	dataExchanger->editMode = EDITMODE_OBJECT;
-	dataExchanger->editTool = EDITMODE_NORMAL;
-    // to make things simpler, we do not allow "uncheck" of the tool, you must pick another one to uncheck
-    map_edit_tab->update_edit_area();
-}
 
 
 void MainWindow::on_comboBox_currentIndexChanged(int index)
@@ -283,31 +154,6 @@ void MainWindow::on_comboBox_currentIndexChanged(int index)
     map_edit_tab->update_edit_area();
 }
 
-void MainWindow::on_actionEdit_NPC_triggered()
-{
-    map_edit_tab->set_current_box(3);
-	ui->actionEdit_Tileset->setChecked(FALSE);
-	ui->actionAdd_Object->setChecked(FALSE);
-	ui->actionEdit_NPC->setChecked(TRUE);
-	ui->actionFill->setDisabled(TRUE);
-	ui->actionLink->setDisabled(TRUE);
-	ui->actionLock_Edit->setDisabled(TRUE);
-	ui->actionStairs->setDisabled(TRUE);
-	dataExchanger->editMode = EDITMODE_NPC;
-}
-
-void MainWindow::on_actionEdit_Tileset_triggered()
-{
-	ui->actionEdit_NPC->setChecked(FALSE);
-	ui->actionAdd_Object->setChecked(FALSE);
-	ui->actionEdit_Tileset->setChecked(TRUE);
-	ui->actionFill->setDisabled(FALSE);
-	ui->actionLink->setDisabled(FALSE);
-	ui->actionLock_Edit->setDisabled(FALSE);
-	ui->actionStairs->setDisabled(FALSE);
-    map_edit_tab->set_current_box(1);
-	dataExchanger->editMode = EDITMODE_NORMAL;
-}
 
 void MainWindow::on_listWidget_currentRowChanged(int currentRow)
 {
@@ -450,7 +296,167 @@ void MainWindow::on_tabWidget_currentChanged(int index)
 }
 
 
+void MainWindow::on_actionLock_Edit_triggered()
+{
+    if (ui->actionLock_Edit->isChecked()) {
+        ui->actionNormal_Edit->setChecked(false);
+        ui->actionEraser->setChecked(false);
+        ui->actionFill->setChecked(false);
+        ui->actionLink->setChecked(false);
+        ui->actionStairs->setChecked(false);
+        ui->actionAction_subboss->setChecked(false);
+        map_edit_tab->set_current_box(2);
+        dataExchanger->editTool = EDITMODE_LOCK;
+    // to make things simpler, we do not allow "uncheck" of the tool, you must pick another one to uncheck
+    } else {
+        ui->actionLock_Edit->setChecked(true);
+    }
+    map_edit_tab->update_edit_area();
+}
 
+void MainWindow::on_actionNormal_Edit_triggered()
+{
+    if (ui->actionNormal_Edit->isChecked()) {
+        ui->actionLock_Edit->setChecked(false);
+        ui->actionEraser->setChecked(false);
+        ui->actionFill->setChecked(false);
+        ui->actionLink->setChecked(false);
+        ui->actionStairs->setChecked(false);
+        ui->actionAction_subboss->setChecked(false);
+        dataExchanger->editTool = EDITMODE_NORMAL;
+        if (ui->actionEdit_Tileset->isChecked()) {
+            map_edit_tab->set_current_box(1);
+        } else if (ui->actionEdit_NPC->isChecked()) {
+            map_edit_tab->set_current_box(3);
+        } else if (ui->actionAdd_Object->isChecked()) {
+            map_edit_tab->set_current_box(5);
+        }
+    // to make things simpler, we do not allow "uncheck" of the tool, you must pick another one to uncheck
+    } else {
+        ui->actionNormal_Edit->setChecked(true);
+    }
+}
+
+void MainWindow::on_actionEraser_triggered()
+{
+    if (ui->actionEraser->isChecked()) {
+        ui->actionLock_Edit->setChecked(false);
+        ui->actionNormal_Edit->setChecked(false);
+        ui->actionFill->setChecked(false);
+        ui->actionLink->setChecked(false);
+        ui->actionStairs->setChecked(false);
+        ui->actionAction_subboss->setChecked(false);
+        dataExchanger->editTool = EDITMODE_ERASER;
+    // to make things simpler, we do not allow "uncheck" of the tool, you must pick another one to uncheck
+    } else {
+        ui->actionEraser->setChecked(true);
+    }
+}
+
+
+
+
+void MainWindow::on_actionFill_triggered()
+{
+    if (ui->actionFill->isChecked()) {
+        ui->actionLock_Edit->setChecked(false);
+        ui->actionNormal_Edit->setChecked(false);
+        ui->actionEraser->setChecked(false);
+        ui->actionLink->setChecked(false);
+        ui->actionStairs->setChecked(false);
+        ui->actionAction_subboss->setChecked(false);
+        dataExchanger->editTool = EDITMODE_FILL;
+    // to make things simpler, we do not allow "uncheck" of the tool, you must pick another one to uncheck
+    } else {
+        ui->actionFill->setChecked(true);
+    }
+}
+
+void MainWindow::on_actionLink_triggered()
+{
+    map_edit_tab->set_current_box(4);
+    if (ui->actionLink->isChecked()) {
+        ui->actionLock_Edit->setChecked(false);
+        ui->actionNormal_Edit->setChecked(false);
+        ui->actionEraser->setChecked(false);
+        ui->actionFill->setChecked(false);
+        ui->actionStairs->setChecked(false);
+        ui->actionAdd_Object->setChecked(false);
+        ui->actionAction_subboss->setChecked(false);
+        dataExchanger->editTool = EDITMODE_LINK;
+        map_edit_tab->update_edit_area();
+    // to make things simpler, we do not allow "uncheck" of the tool, you must pick another one to uncheck
+    } else {
+        ui->actionFill->setChecked(true);
+        map_edit_tab->update_edit_area();
+    }
+}
+
+void MainWindow::on_actionStairs_triggered()
+{
+    if (ui->actionStairs->isChecked()) {
+        ui->actionNormal_Edit->setChecked(false);
+        ui->actionEraser->setChecked(false);
+        ui->actionFill->setChecked(false);
+        ui->actionLock_Edit->setChecked(false);
+        ui->actionLink->setChecked(false);
+        ui->actionAdd_Object->setChecked(false);
+        ui->actionAction_subboss->setChecked(false);
+        dataExchanger->editTool = EDITMODE_STAIRS;
+    // to make things simpler, we do not allow "uncheck" of the tool, you must pick another one to uncheck
+    } else {
+        ui->actionStairs->setChecked(true);
+    }
+    map_edit_tab->update_edit_area();
+}
+
+
+void MainWindow::on_actionAdd_Object_triggered()
+{
+    map_edit_tab->set_current_box(5);
+    ui->actionEdit_Tileset->setChecked(false);
+    ui->actionEdit_NPC->setChecked(false);
+    ui->actionNormal_Edit->setChecked(true);
+    ui->actionEraser->setChecked(false);
+    ui->actionFill->setChecked(false);
+    ui->actionLock_Edit->setChecked(false);
+    ui->actionLock_Edit->setEnabled(false);
+    ui->actionLink->setChecked(false);
+    ui->actionAdd_Object->setChecked(true);
+    ui->actionAction_subboss->setChecked(false);
+    dataExchanger->editMode = EDITMODE_OBJECT;
+    dataExchanger->editTool = EDITMODE_NORMAL;
+    // to make things simpler, we do not allow "uncheck" of the tool, you must pick another one to uncheck
+    map_edit_tab->update_edit_area();
+}
+
+void MainWindow::on_actionEdit_NPC_triggered()
+{
+    map_edit_tab->set_current_box(3);
+    ui->actionEdit_Tileset->setChecked(false);
+    ui->actionAdd_Object->setChecked(false);
+    ui->actionEdit_NPC->setChecked(true);
+    ui->actionFill->setDisabled(true);
+    ui->actionLink->setDisabled(true);
+    ui->actionLock_Edit->setDisabled(true);
+    ui->actionStairs->setDisabled(true);
+    ui->actionAction_subboss->setChecked(false);
+    dataExchanger->editMode = EDITMODE_NPC;
+}
+
+void MainWindow::on_actionEdit_Tileset_triggered()
+{
+    ui->actionEdit_NPC->setChecked(false);
+    ui->actionAdd_Object->setChecked(false);
+    ui->actionEdit_Tileset->setChecked(true);
+    ui->actionFill->setDisabled(false);
+    ui->actionLink->setDisabled(false);
+    ui->actionLock_Edit->setDisabled(false);
+    ui->actionStairs->setDisabled(false);
+    map_edit_tab->set_current_box(1);
+    ui->actionAction_subboss->setChecked(false);
+    dataExchanger->editMode = EDITMODE_NORMAL;
+}
 
 
 
@@ -458,19 +464,33 @@ void MainWindow::on_actionSet_Boss_triggered(bool checked)
 {
     if (checked == true) {
         map_edit_tab->set_current_box(3);
-        ui->actionEdit_Tileset->setChecked(FALSE);
-        ui->actionAdd_Object->setChecked(FALSE);
-        ui->actionEdit_NPC->setChecked(FALSE);
-        ui->actionFill->setDisabled(TRUE);
-        ui->actionLink->setDisabled(TRUE);
-        ui->actionLock_Edit->setDisabled(TRUE);
-        ui->actionStairs->setDisabled(TRUE);
+        ui->actionEdit_Tileset->setChecked(false);
+        ui->actionAdd_Object->setChecked(false);
+        ui->actionEdit_NPC->setChecked(false);
+        ui->actionFill->setDisabled(true);
+        ui->actionLink->setDisabled(true);
+        ui->actionLock_Edit->setDisabled(true);
+        ui->actionStairs->setDisabled(true);
+        ui->actionAction_subboss->setChecked(false);
         dataExchanger->editMode = EDITMODE_SET_BOSS;
     }
 }
 
 
-
+void MainWindow::on_actionAction_subboss_triggered(bool checked)
+{
+    if (checked == true) {
+        map_edit_tab->set_current_box(3);
+        ui->actionEdit_Tileset->setChecked(false);
+        ui->actionAdd_Object->setChecked(false);
+        ui->actionEdit_NPC->setChecked(false);
+        ui->actionFill->setDisabled(true);
+        ui->actionLink->setDisabled(true);
+        ui->actionLock_Edit->setDisabled(true);
+        ui->actionStairs->setDisabled(true);
+        dataExchanger->editMode = EDITMODE_SET_SUBBOSS;
+    }
+}
 
 void MainWindow::on_bg1_filename_currentIndexChanged(const QString &arg1)
 {
@@ -497,7 +517,7 @@ void MainWindow::on_bg1_y_pos_valueChanged(int arg1)
 void MainWindow::on_bg1_speed_valueChanged(int arg1)
 {
     stage_data.stages[dataExchanger->currentStage].maps[dataExchanger->currentMap].backgrounds[0].speed = arg1*10;
-    std::cout << "*** on_bg1_speed_valueChanged - setvalue: " << arg1 << ", bg1.speed: " << stage_data.stages[dataExchanger->currentStage].maps[dataExchanger->currentMap].backgrounds[0].speed << std::endl;
+    std::cout << "#1 *** on_bg1_speed_valueChanged - setvalue: " << arg1 << ", bg1.speed: " << stage_data.stages[dataExchanger->currentStage].maps[dataExchanger->currentMap].backgrounds[0].speed << std::endl;
     map_edit_tab->update_edit_area();
 }
 
@@ -550,17 +570,17 @@ void MainWindow::on_stage_boss_weapon_combo_currentIndexChanged(int index)
 
 void MainWindow::on_bg1_speed_valueChanged(double arg1)
 {
-	if (background_filled == false) {
+    if (background_filled == false) {
 		return;
 	}
     stage_data.stages[dataExchanger->currentStage].maps[dataExchanger->currentMap].backgrounds[0].speed = arg1*10;
-    std::cout << "*** on_bg1_speed_valueChanged - setvalue: " << arg1 << ", bg1.speed: " << stage_data.stages[dataExchanger->currentStage].maps[dataExchanger->currentMap].backgrounds[0].speed << std::endl;
+    std::cout << "#2 *** on_bg1_speed_valueChanged - setvalue: " << arg1 << ", bg1.speed: " << stage_data.stages[dataExchanger->currentStage].maps[dataExchanger->currentMap].backgrounds[0].speed << std::endl;
     map_edit_tab->update_edit_area();
 }
 
 void MainWindow::on_bg2_speed_valueChanged(double arg1)
 {
-	if (background_filled == false) {
+    if (background_filled == false) {
 		return;
 	}
     stage_data.stages[dataExchanger->currentStage].maps[dataExchanger->currentMap].backgrounds[1].speed = arg1*10;
@@ -574,8 +594,6 @@ void MainWindow::on_actionReset_Map_triggered()
             stage_data.stages[dataExchanger->currentStage].maps[dataExchanger->currentMap].tiles[i][j].locked = 0;
             stage_data.stages[dataExchanger->currentStage].maps[dataExchanger->currentMap].tiles[i][j].tile1.x = -1;
             stage_data.stages[dataExchanger->currentStage].maps[dataExchanger->currentMap].tiles[i][j].tile1.y = -1;
-            stage_data.stages[dataExchanger->currentStage].maps[dataExchanger->currentMap].tiles[i][j].tile2.x = -1;
-            stage_data.stages[dataExchanger->currentStage].maps[dataExchanger->currentMap].tiles[i][j].tile2.y = -1;
             stage_data.stages[dataExchanger->currentStage].maps[dataExchanger->currentMap].tiles[i][j].tile3.x = -1;
             stage_data.stages[dataExchanger->currentStage].maps[dataExchanger->currentMap].tiles[i][j].tile3.y = -1;
             stage_data.stages[dataExchanger->currentStage].maps[dataExchanger->currentMap].backgrounds[0].filename[0] = '\0';
@@ -586,7 +604,7 @@ void MainWindow::on_actionReset_Map_triggered()
 
 void MainWindow::on_players_tab_maxshots_valueChanged(int arg1)
 {
-	if (_data_loading == true) {
+    if (_data_loading == true) {
 		return;
 	}
 	std::cout << "dataExchanger->current_player: " << dataExchanger->current_player << ", max_shots: " << game_data.players[dataExchanger->current_player].max_shots << std::endl;
@@ -600,30 +618,6 @@ void MainWindow::on_can_slide_checkbox_toggled(bool checked)
         return;
     }
     game_data.players[dataExchanger->current_player].can_slide = checked;
-}
-
-void MainWindow::on_players_tab_jumpgravity_valueChanged(double arg1)
-{
-    if (_data_loading == true) {
-        return;
-    }
-    game_data.players[dataExchanger->current_player].jump_gravity = arg1;
-}
-
-void MainWindow::on_players_tab_fallgravity_valueChanged(double arg1)
-{
-    if (_data_loading == true) {
-        return;
-    }
-    game_data.players[dataExchanger->current_player].touch_damage_reduction = arg1;
-}
-
-void MainWindow::on_players_tab_jumpspeed_valueChanged(double arg1)
-{
-    if (_data_loading == true) {
-        return;
-    }
-    game_data.players[dataExchanger->current_player].jump_initial_speed = arg1;
 }
 
 void MainWindow::on_players_tab_movespeed_valueChanged(int arg1)
@@ -680,7 +674,37 @@ void MainWindow::on_actionSwap_Maps_triggered()
 
 }
 
-void MainWindow::on_actionBeaten_toggled(bool arg1)
+
+
+
+
+void MainWindow::on_actionScenes_Editor_triggered()
 {
-    dataExchanger->show_beaten = arg1;
+    scenes_window = new SceneEditorWindow();
+    scenes_window->show();
+}
+
+void MainWindow::on_actionObjects_toggled(bool arg1)
+{
+    dataExchanger->show_objects_flag = arg1;
+    map_edit_tab->update_edit_area();
+}
+
+void MainWindow::on_actionNPCs_toggled(bool arg1)
+{
+    dataExchanger->show_npcs_flag = arg1;
+    map_edit_tab->update_edit_area();
+}
+
+void MainWindow::on_actionTeleporters_toggled(bool arg1)
+{
+    dataExchanger->show_teleporters_flag = arg1;
+    map_edit_tab->update_edit_area();
+}
+
+void MainWindow::on_actionAbout_triggered()
+{
+    about_window = new AboutWindow();
+    about_window->show();
+
 }

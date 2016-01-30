@@ -218,21 +218,6 @@ stage_data.maps[number].backgrounds[0].speed = 0;
 // ********************************************************************************************** //
 void classMap::drawMap()
 {
-
-    if (bg1_surface.width > 0 && stage_data.maps[number].backgrounds[0].speed == 0.0) {
-		//std::cout << "classMap::drawMap - stage_number: " << stage_number << ", number: " << number << " has bg1 static" << std::endl;
-		for (int i=0; i<mapSurface.width/bg1_surface.width+1; i++) {
-            graphLib.copyArea(st_position(i*bg1_surface.width, stage_data.maps[number].backgrounds[0].adjust_y), &bg1_surface, &mapSurface);
-		}
-		bg1_surface.freeGraphic();
-	}
-    if (bg2_surface.width > 0 && stage_data.maps[number].backgrounds[1].speed == 0.0) {
-		//std::cout << "classMap::drawMap - stage_number: " << stage_number << ", number: " << number << " has bg2 static" << std::endl;
-		for (int i=0; i<mapSurface.width/bg2_surface.width+1; i++) {
-            graphLib.copyArea(st_position(i*bg2_surface.width, stage_data.maps[number].backgrounds[1].adjust_y), &bg2_surface, &mapSurface);
-		}
-		bg2_surface.freeGraphic();
-	}
 	struct st_position pos_origin;
 	struct st_position pos_destiny;
 	for (int i=0; i<MAP_W; i++) {
@@ -248,38 +233,44 @@ void classMap::drawMap()
                 exit(-1);
             }
 
-            graphLib.placeTile(pos_origin, pos_destiny, &mapSurface, game_save.stages[gameControl.currentStage]);
-			// level 2
-            pos_origin.x = stage_data.maps[number].tiles[i][j].tile2.x;
-            pos_origin.y = stage_data.maps[number].tiles[i][j].tile2.y;
-            graphLib.placeTile(pos_origin, pos_destiny, &mapSurface, game_save.stages[gameControl.currentStage]);
-		}
+            graphLib.placeTile(pos_origin, pos_destiny, &mapSurface);
+        }
 	}
     //std::cout << "graphLib.gameScreen.width: " << graphLib.gameScreen.width << std::endl;
     //graphLib.clear_area(0, 0, 600, graphLib.gameScreen.height, 0, 0, 0);
 }
 
 
-// ********************************************************************************************** //
-//                                                                                                //
-// ********************************************************************************************** //
 void classMap::showMap()
 {
-    std::vector<animation>::iterator animation_it;
-	struct st_rectangle origin_rectangle;
+    if (!mapSurface.gSurface) {
+        graphLib.show_debug_msg("EXIT #21.A");
+        exit(-1);
+    }
 
-	origin_rectangle.x = scroll.x;
-	origin_rectangle.y = scroll.y;
-    origin_rectangle.w = RES_W;
-    origin_rectangle.h = RES_H;
-
-    /// @TODO - remove and make the bgcolor to be placed inside dynamic background  #1
     graphLib.clear_surface_area(0, 0, RES_W, RES_H, stage_data.maps[number].background_color.r, stage_data.maps[number].background_color.g, stage_data.maps[number].background_color.b, graphLib.gameScreen);
     draw_dynamic_backgrounds();
-    graphLib.showMapSurfaceRegion(&mapSurface, origin_rectangle);
+    int tile_x_ini = scroll.x/TILESIZE-1;
+
+    // draw the tiles of the screen region
+    struct st_position pos_origin;
+    struct st_position pos_destiny;
+    int n = -1;
+    for (int i=tile_x_ini; i<tile_x_ini+(RES_W/TILESIZE)+2; i++) {
+        int diff = scroll.x - (tile_x_ini+1)*TILESIZE;
+        pos_destiny.x = n*TILESIZE - diff;
+        for (int j=0; j<MAP_H; j++) {
+            pos_origin.x = stage_data.maps[number].tiles[i][j].tile1.x;
+            pos_origin.y = stage_data.maps[number].tiles[i][j].tile1.y;
+            pos_destiny.y = j*TILESIZE;
+            graphLib.placeTile(pos_origin, pos_destiny, &graphLib.gameScreen);
+        }
+        n++;
+    }
 
 
-	/// @TODO: remove "finished" animations
+    /// @TODO: remove "finished" animations
+    std::vector<animation>::iterator animation_it;
     for (animation_it = animation_list.begin(); animation_it != animation_list.end(); animation_it++) {
         if ((*animation_it).finished() == true) {
             animation_list.erase(animation_it);
@@ -289,6 +280,7 @@ void classMap::showMap()
         }
     }
 }
+
 
 // ********************************************************************************************** //
 // show the third level of tiles                                                                  //
@@ -318,7 +310,7 @@ void classMap::showAbove(int scroll_y, int temp_scroll_x)
             continue;
         }
         //graphLib.placeTile(pos_origin, pos_destiny, &graphLib.gameScreen, game_save.stages[gameControl.currentStage]);
-        graphLib.place_3rd_level_tile((*tile3_it).tileset_pos.x, (*tile3_it).tileset_pos.y, ((*tile3_it).map_position.x*TILESIZE)-scroll_x, ((*tile3_it).map_position.y*TILESIZE)+scroll_y, game_save.stages[gameControl.currentStage]);
+        graphLib.place_3rd_level_tile((*tile3_it).tileset_pos.x, (*tile3_it).tileset_pos.y, ((*tile3_it).map_position.x*TILESIZE)-scroll_x, ((*tile3_it).map_position.y*TILESIZE)+scroll_y);
     }
 
     if (_water_bubble.pos.x != -1) {
@@ -364,6 +356,14 @@ int classMap::getMapPointLock(st_position pos) const
 		return TERRAIN_UNBLOCKED;
 	}
     return stage_data.maps[number].tiles[pos.x][pos.y].locked;
+}
+
+st_position_int8 classMap::get_map_point_tile1(st_position pos)
+{
+    if (pos.x < 0 || pos.y < 0 || pos.y > RES_H/TILESIZE || pos.x > MAP_W) {
+        return st_position_int8(-1, -1);
+    }
+    return stage_data.maps[number].tiles[pos.x][pos.y].tile1;
 }
 
 // ********************************************************************************************** //
@@ -498,13 +498,13 @@ void classMap::load_map_npcs()
 
 void classMap::draw_dynamic_backgrounds()
 {
-    if (bg1_surface.width > 0 && stage_data.maps[number].backgrounds[0].speed != 0) {
+    if (bg1_surface.width > 0) {
         // draw leftmost part
         graphLib.copyAreaWithAdjust(st_position(bg1_scroll, stage_data.maps[number].backgrounds[0].adjust_y), &bg1_surface, &graphLib.gameScreen);
     }
 
 
-    if (bg2_surface.width > 0 && stage_data.maps[number].backgrounds[1].speed != 0) {
+    if (bg2_surface.width > 0) {
         // draw leftmost part
         graphLib.copyAreaWithAdjust(st_position(bg2_scroll, stage_data.maps[number].backgrounds[1].adjust_y), &bg2_surface, &graphLib.gameScreen);
         //std::cout << "MAP::draw_dynamic_backgrounds_into_surface - bg2_scroll: " << bg2_scroll << std::endl;
@@ -514,17 +514,16 @@ void classMap::draw_dynamic_backgrounds()
 
 void classMap::draw_dynamic_backgrounds_into_surface(graphicsLib_gSurface &surface, int x_adjust, int y_adjust)
 {
+    //std::cout << "MAP::draw_dynamic_backgrounds_into_surface - color: (" << stage_data.maps[number].background_color.r << ", " << stage_data.maps[number].background_color.g << ", " << stage_data.maps[number].background_color.b << ")" << std::endl;
     graphLib.clear_surface_area(0, 0, surface.width, surface.height, stage_data.maps[number].background_color.r, stage_data.maps[number].background_color.g, stage_data.maps[number].background_color.b, surface);
     if (bg1_surface.width > 0 && stage_data.maps[number].backgrounds[0].speed != 0) {
         // draw leftmost part
-        //graphLib.copyAreaWithAdjust(st_position(x_adjust, y_adjust), &bg1_surface, &surface);
         graphLib.copyAreaWithAdjust(st_position(x_adjust, stage_data.maps[number].backgrounds[0].adjust_y+y_adjust), &bg1_surface, &surface);
     }
 
 
     if (bg2_surface.width > 0 && stage_data.maps[number].backgrounds[1].speed != 0) {
         // draw leftmost part
-        //graphLib.copyAreaWithAdjust(st_position(x_adjust, y_adjust), &bg2_surface, &surface);
         graphLib.copyAreaWithAdjust(st_position(x_adjust, stage_data.maps[number].backgrounds[1].adjust_y+y_adjust), &bg2_surface, &surface);
     }
     graphLib.set_colormap_current(&surface);
@@ -587,7 +586,7 @@ void classMap::drop_item(st_position position)
             std::cout << ">>>>>>>>> obj_type_n(" << obj_type_n << ") invalid for obj_type(" << obj_type << ")" << std::endl;
             return;
         }
-        object temp_obj(obj_type_n, this, obj_pos);
+        object temp_obj(obj_type_n, this, obj_pos, st_position(-1, -1), -1);
         temp_obj.set_duration(4500);
         add_object(temp_obj);
     }
@@ -649,6 +648,7 @@ void classMap::add_bubble_animation(st_position pos)
     _water_bubble.x_adjust = 0;
 }
 
+// checks if player have any special object in screen
 bool classMap::have_player_object()
 {
     for (std::vector<object>::iterator it=object_list.begin(); it!=object_list.end(); it++) {
@@ -659,6 +659,45 @@ bool classMap::have_player_object()
         }
     }
     return false;
+}
+
+bool classMap::subboss_alive_on_left(short tileX)
+{
+    std::vector<classnpc*>::iterator npc_it;
+    for (npc_it = _npc_list.begin(); npc_it != _npc_list.end(); npc_it++) {
+        classnpc* temp_obj = (*npc_it);
+        if (temp_obj->is_subboss() == true && temp_obj->is_dead() == false) {
+            std::cout << "Opa, achou um sub-boss!" << std::endl;
+            std::cout << "pos.x: " << temp_obj->getPosition().x << ", tileX*TILESIZE: " << tileX*TILESIZE << std::endl;
+            if (temp_obj->getPosition().x >= (tileX-20)*TILESIZE && temp_obj->getPosition().x<= tileX*TILESIZE) { // 20 tiles is the size of a visible screen
+                std::cout << "Opa, achou um sub-boss NA ESQUERDA!!" << std::endl;
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+void classMap::finish_object_teleporter(int number)
+{
+    for (std::vector<object>::iterator it=object_list.begin(); it!=object_list.end(); it++) {
+        object& temp_obj = (*it);
+        std::cout << "number: " << number << ", obj.id: " << temp_obj.get_obj_map_id() << std::endl;
+        if (temp_obj.get_obj_map_id() == number) {
+            temp_obj.set_direction(ANIM_DIRECTION_RIGHT);
+        }
+    }
+}
+
+void classMap::activate_final_boss_teleporter()
+{
+    for (std::vector<object>::iterator it=object_list.begin(); it!=object_list.end(); it++) {
+        object& temp_obj = (*it);
+        std::cout << "number: " << number << ", obj.id: " << temp_obj.get_obj_map_id() << ", type: " << temp_obj.get_type() << ", OBJ_FINAL_BOSS_TELEPORTER: " << OBJ_FINAL_BOSS_TELEPORTER << std::endl;
+        if (temp_obj.get_type() == OBJ_FINAL_BOSS_TELEPORTER) {
+            temp_obj.start();
+        }
+    }
 }
 
 
@@ -681,11 +720,13 @@ void classMap::load_map_objects() {
 	for (int i=0; i<MAX_MAP_NPC_N; i++) {
         if (stage_data.maps[number].map_objects[i].id_object != -1) {
             //int temp_id = stage_data.maps[number].map_objects[i].id_object;
-			object temp_obj(stage_data.maps[number].map_objects[i].id_object, this, stage_data.maps[number].map_objects[i].start_point);
+            object temp_obj(stage_data.maps[number].map_objects[i].id_object, this, stage_data.maps[number].map_objects[i].start_point, stage_data.maps[number].map_objects[i].link_dest, stage_data.maps[number].map_objects[i].map_dest);
+            temp_obj.set_obj_map_id(i);
+            temp_obj.set_direction(stage_data.maps[number].map_objects[i].direction);
 			object_list.push_back(temp_obj);
 		}
 	}
-    //std::cout << ">>>>>> MAP::load_map_objects - object_list.size: " << object_list.size() << std::endl;
+    std::cout << ">>>>>> MAP::load_map_objects[" << number << "] - object_list.size: " << object_list.size() << std::endl;
 }
 
 
@@ -717,19 +758,8 @@ void classMap::create_dynamic_background_surfaces()
     if (strlen(stage_data.maps[number].backgrounds[0].filename) > 0) {
         std::string bg1_filename(FILEPATH+"data/images/map_backgrounds/" + stage_data.maps[number].backgrounds[0].filename);
         if (game_save.stages[gameControl.currentStage] == 1) {
-            std::string bg1_beaten_filename = bg1_filename.substr(0, bg1_filename.length()-4);
-            bg1_beaten_filename = bg1_beaten_filename + "_beaten.png";
-            //std::cout << "beaten-bg1: " << bg1_beaten_filename << std::endl;
-            if (fio.file_exists(bg1_beaten_filename) == true) {
-                //std::cout << "beaten_bg1 EXISTS" << std::endl;
-                graphLib.surfaceFromFile(bg1_beaten_filename, &temp_surface);
-                create_dynamic_background_surface(bg1_surface, temp_surface);
-
-            } else {
-                //std::cout << "beaten_bg1 NOT found" << std::endl;
-                graphLib.surfaceFromFile(bg1_filename, &temp_surface);
-                create_dynamic_background_surface(bg1_surface, temp_surface);
-            }
+            graphLib.surfaceFromFile(bg1_filename, &temp_surface);
+            create_dynamic_background_surface(bg1_surface, temp_surface);
         } else {
             graphLib.surfaceFromFile(bg1_filename, &temp_surface);
             create_dynamic_background_surface(bg1_surface, temp_surface);
@@ -741,15 +771,8 @@ void classMap::create_dynamic_background_surfaces()
     if (strlen(stage_data.maps[number].backgrounds[1].filename) > 0) {
         std::string bg2_filename(FILEPATH+"data/images/map_backgrounds/"+ stage_data.maps[number].backgrounds[1].filename);
         if (game_save.stages[gameControl.currentStage] == 1) {
-            std::string bg2_beaten_filename = bg2_filename.substr(0, bg2_filename.length()-4);
-            bg2_beaten_filename = bg2_beaten_filename + "_beaten.png";
-            if (fio.file_exists(bg2_beaten_filename) == true) {
-                graphLib.surfaceFromFile(bg2_beaten_filename, &temp_surface);
-                create_dynamic_background_surface(bg2_surface, temp_surface);
-            } else {
-                graphLib.surfaceFromFile(bg2_filename, &temp_surface);
-                create_dynamic_background_surface(bg2_surface, temp_surface);
-            }
+            graphLib.surfaceFromFile(bg2_filename, &temp_surface);
+            create_dynamic_background_surface(bg2_surface, temp_surface);
         } else {
             graphLib.surfaceFromFile(bg2_filename, &temp_surface);
             create_dynamic_background_surface(bg2_surface, temp_surface);
@@ -789,8 +812,7 @@ int classMap::colision_rect_player_obj(character* playerObj, object* temp_obj, c
     bool xOverlap = xObjOver == true || xPlayerOver == true;
     bool yOverlap = value_in_range(obj_rect.y, p_rect.y, p_rect.y + p_rect.h) || value_in_range(p_rect.y, obj_rect.y, obj_rect.y + obj_rect.h);
 
-    //std::cout << "xOverlap: " << xOverlap << ", yOverlap: " << yOverlap << std::endl;
-
+    //std::cout << "x_inc: " << x_inc << ", y_inc: " << y_inc << ", xOverlap: " << xOverlap << ", yOverlap: " << yOverlap << std::endl;
     //std::cout << "obj_rect.x: " << obj_rect.x << ", p.x+p.w: " << (p_rect.x + p_rect.w) << ", xOverlap: " << xOverlap << ", yOverlap: " << yOverlap << std::endl;
 
 
@@ -818,6 +840,8 @@ void classMap::colision_player_object(character* playerObj, const short int x_in
     int blocked = 0;
     object* res_obj = NULL;
 
+    //if (y_inc < 0) std::cout << "MAP::colision_player_object - y_inc: " << y_inc << std::endl;
+
 
     if (playerObj->get_platform() == NULL) {
         for (std::vector<object>::iterator it=object_list.begin(); it!=object_list.end(); it++) {
@@ -842,16 +866,42 @@ void classMap::colision_player_object(character* playerObj, const short int x_in
                 continue;
             }
 
-
+            //if (y_inc < 0) std::cout << "MAP::colision_player_object - DEBUG #1" << std::endl;
 
             // usar TEMP_BLOCKED aqui, para não zerar o blocked anterior, fazer merge dos valores
-            int temp_blocked = colision_rect_player_obj(playerObj, &temp_obj, x_inc, y_inc, reduce_x, reduce_y, 0, 0);
+            int temp_blocked = 0;
+            if (y_inc >= 0 || (temp_obj.get_type() != OBJ_ITEM_FLY && temp_obj.get_type() != OBJ_ITEM_JUMP)) { // jumping up on items does not block
+                temp_blocked = colision_rect_player_obj(playerObj, &temp_obj, x_inc, y_inc, reduce_x, reduce_y, 0, 0);
+                //std::cout << "temp_blocked[" << temp_obj.get_name() << "]: " << temp_blocked << std::endl;
+            }
 
+            // to enter platform, player.x+player.h must not be much higher than obj.y
+            if (temp_obj.get_type() == OBJ_ITEM_FLY || temp_obj.get_type() == OBJ_ITEM_JUMP || temp_obj.get_type() == OBJ_ACTIVE_DISAPPEARING_BLOCK || temp_obj.get_type() == OBJ_FALL_PLATFORM || temp_obj.get_type() == OBJ_FLY_PLATFORM || temp_obj.get_type() == OBJ_MOVING_PLATFORM_LEFTRIGHT || temp_obj.get_type() == OBJ_MOVING_PLATFORM_UPDOWN) {
+                if (playerObj->getPosition().y+playerObj->get_size().height-2 > temp_obj.get_position().y) {
+                    temp_blocked = 0;
+                }
+            }
 
 
             if (temp_blocked == BLOCK_Y || temp_blocked == BLOCK_XY) {
 
                 bool entered_platform = false;
+
+                if (temp_obj.get_state() != 0 && temp_obj.get_type() == OBJ_TRACK_PLATFORM) {
+                    temp_blocked = 0;
+                    continue;
+                }
+
+                if (temp_obj.get_state() != 0 && (temp_obj.get_type() == OBJ_RAY_VERTICAL || temp_obj.get_type() == OBJ_RAY_HORIZONTAL)) {
+                    playerObj->damage(TOUCH_DAMAGE_BIG, false);
+                    temp_blocked = 0;
+                    continue;
+                } else if (temp_obj.get_state() != 0 && (temp_obj.get_type() == OBJ_DEATHRAY_VERTICAL || temp_obj.get_type() == OBJ_DEATHRAY_HORIZONTAL)) {
+                    std::cout << "DEATHRAY(damage) - player.x: " << playerObj->getPosition().x << ", map.scroll_x: " << scroll.x << ", pos.x: " << temp_obj.get_position().x << ", size.w: " << temp_obj.get_size().width << std::endl;
+                    playerObj->damage(999, false);
+                    temp_blocked = 0;
+                    continue;
+                }
 
                 if (y_inc > 0 && playerObj->getPosition().y <= temp_obj.get_position().y) {
                     //std::cout << ">>>>>>>> entered_platform!!!!!!! <<<<< classmap::colision_player_object - obj_rect.x: " << obj_rect.x << ", obj_rect.y: " << obj_rect.y << ", obj_rect.w: " << obj_rect.w << ", obj_rect.h: " << obj_rect.h << std::endl;
@@ -861,6 +911,7 @@ void classMap::colision_player_object(character* playerObj, const short int x_in
 
                 if (entered_platform == true) {
                     //std::cout << "player.platform: " << playerObj->get_platform() << std::endl;
+
 
                     if (temp_obj.is_hidden() == false && (temp_obj.get_type() == OBJ_MOVING_PLATFORM_UPDOWN || temp_obj.get_type() == OBJ_MOVING_PLATFORM_LEFTRIGHT || temp_obj.get_type() == OBJ_DISAPPEARING_BLOCK)) {
                         if (playerObj->get_platform() == NULL && (temp_blocked == 2 || temp_blocked == 3)) {
@@ -889,14 +940,20 @@ void classMap::colision_player_object(character* playerObj, const short int x_in
                             return;
                         }
                     } else if (temp_obj.get_type() == OBJ_ITEM_JUMP) {
-                        if (playerObj->get_platform() == NULL && (temp_blocked == 2 || temp_blocked == 3) && y_inc > 0) {
+                        if (playerObj->get_platform() == NULL && (temp_blocked == 2 || temp_blocked == 3) && y_inc > 0 && playerObj->getPosition().y+playerObj->get_size().height <= temp_obj.get_position().y+1) {
                             playerObj->activate_super_jump();
                             playerObj->activate_force_jump();
                             temp_obj.start();
                         }
                         if (temp_blocked != 0) {
-                            _obj_colision = object_colision(temp_blocked, &(*it));
-                            return;
+                            if (y_inc > 0) {
+                                //std::cout << ">>>> temp_blocked: " << temp_blocked << ", y_inc: " << y_inc << std::endl;
+                                _obj_colision = object_colision(temp_blocked, &(*it));
+                                return;
+                            } else {
+                                std::cout << ">>>> RESET BLOCKED" <<  std::endl;
+                                temp_blocked = 0;
+                            }
                         }
                     } else if (temp_obj.is_hidden() == false && temp_obj.is_started() == false && temp_obj.get_type() == OBJ_ACTIVE_DISAPPEARING_BLOCK) {
                         temp_obj.start();
@@ -908,6 +965,12 @@ void classMap::colision_player_object(character* playerObj, const short int x_in
                                 temp_obj.start();
                             }
                             temp_obj.set_timer(timer.getTimer()+30);
+                            _obj_colision = object_colision(temp_blocked, &(*it));
+                            return;
+                        }
+                    } else if (temp_obj.get_type() == OBJ_TRACK_PLATFORM) {
+                        if (playerObj->get_platform() == NULL) {
+                            playerObj->set_platform(&temp_obj);
                             _obj_colision = object_colision(temp_blocked, &(*it));
                             return;
                         }
@@ -950,20 +1013,20 @@ void classMap::colision_player_object(character* playerObj, const short int x_in
         object* temp_obj = playerObj->get_platform();
         if (temp_obj->is_hidden() == true) {
             playerObj->set_platform(NULL);
+        } else if (temp_obj->get_type() == OBJ_TRACK_PLATFORM && temp_obj->get_state() != 0) {
+            playerObj->set_platform(NULL);
         } else {
             blocked = colision_rect_player_obj(playerObj, temp_obj, x_inc, y_inc, reduce_x, reduce_y, 0, 0);
-
         }
     }
 
 
-    //std::cout << "classMap::colision_player_object - blocked: " << blocked << std::endl;
     // got out of platform
     if (blocked == 0 && playerObj->get_platform() != NULL) {
         //  for player item, platform must only be removed only if the item was already adtivated
         if (playerObj->get_platform()->get_type() == OBJ_ITEM_FLY || playerObj->get_platform()->get_type() == OBJ_ITEM_JUMP) {
+            //std::cout << "y_inc: " << y_inc << ", playerObj->get_platform()->get_distance(): " << playerObj->get_platform()->get_distance() << std::endl;
             if (playerObj->get_platform()->get_distance() > 0 && y_inc != 0) {
-                //std::cout << ">> OUT OF PLATFORM #1" << std::endl;
                 playerObj->set_platform(NULL);
             } else {
                 _obj_colision = object_colision(0, NULL);
@@ -1000,6 +1063,18 @@ void classMap::clean_map_npcs_projectiles()
     std::vector<classnpc*>::iterator it;
     for (it=_npc_list.begin(); it!=_npc_list.end(); it++) {
 		(*it)->clean_projectiles();
+    }
+}
+
+void classMap::reset_beam_objects()
+{
+    // reset objects
+    for (std::vector<object>::iterator it=object_list.begin(); it!=object_list.end(); it++) {
+        object& temp_obj = (*it);
+        short obj_type = temp_obj.get_type();
+        if (obj_type == OBJ_DEATHRAY_VERTICAL || obj_type == OBJ_DEATHRAY_HORIZONTAL || obj_type == OBJ_RAY_VERTICAL || obj_type == OBJ_RAY_HORIZONTAL) {
+            temp_obj.reset();
+        }
     }
 }
 
@@ -1094,6 +1169,65 @@ short int classMap::colision_player_npcs(character* playerObj, const short int x
     return 0;
 }
 
+
+// kills any NPC that touches player during player's special attack
+void classMap::colision_player_special_attack(character* playerObj, const short int x_inc, const short int y_inc, short int reduce_x, short int reduce_y)
+{
+    UNUSED(x_inc);
+    UNUSED(y_inc);
+    struct st_rectangle p_rect, npc_rect;
+    std::vector<classnpc*>::iterator npc_it;
+
+    //reduce = abs((float)16-playerObj->sprite->w)*0.5;
+
+    // ponto 3, topo/esquerda
+    if (playerObj->get_direction() == ANIM_DIRECTION_LEFT) {
+        p_rect.x = playerObj->getPosition().x + reduce_x;
+        p_rect.w = playerObj->get_size().width;
+    } else {
+        p_rect.x = playerObj->getPosition().x;
+        p_rect.w = playerObj->get_size().width - reduce_x;
+    }
+    p_rect.y = playerObj->getPosition().y + reduce_y;
+    p_rect.h = playerObj->get_size().height;
+
+    for (npc_it = _npc_list.begin(); npc_it != _npc_list.end(); npc_it++) {
+        classnpc* temp_obj = (*npc_it);
+        if ((*npc_it)->is_player_friend() == true) {
+            continue;
+        }
+        if ((*npc_it)->is_dead() == true) {
+            continue;
+        }
+        if ((*npc_it)->is_invisible() == true) {
+            continue;
+        }
+
+        if ((*npc_it)->is_on_visible_screen() == false) {
+            continue;
+        }
+
+
+        npc_rect.x = temp_obj->getPosition().x;
+        npc_rect.w = temp_obj->get_size().width;
+        npc_rect.y = temp_obj->getPosition().y;
+        npc_rect.h = temp_obj->get_size().height;
+
+        if (temp_obj->get_size().width >= TILESIZE) { // why is this here??? O.o
+            npc_rect.x = temp_obj->getPosition().x+PLAYER_NPC_COLLISION_REDUTOR;
+            npc_rect.w = temp_obj->get_size().width-PLAYER_NPC_COLLISION_REDUTOR;
+        }
+        if (temp_obj->get_size().height >= TILESIZE) {
+            npc_rect.y = temp_obj->getPosition().y+PLAYER_NPC_COLLISION_REDUTOR;
+            npc_rect.h = temp_obj->get_size().height-PLAYER_NPC_COLLISION_REDUTOR;
+        }
+        colision_detection rect_colision_obj;
+        if (rect_colision_obj.rect_overlap(npc_rect, p_rect) == true) {
+            temp_obj->damage(12, false);
+        }
+    }
+}
+
 classnpc *classMap::find_nearest_npc(st_position pos)
 {
     std::vector<classnpc*>::iterator npc_it;
@@ -1160,7 +1294,7 @@ void classMap::redraw_boss_door(bool is_close, int nTiles, int tileX, int tileY,
                                     }
 
 
-                                    graphLib.placeTile(st_position(stage_data.maps[number].tiles[i][j].tile3.x, stage_data.maps[number].tiles[i][j].tile3.y), st_position((i*TILESIZE)-scroll.x, (j*TILESIZE)-scroll.y), &graphLib.gameScreen, game_save.stages[gameControl.currentStage]);
+                                    graphLib.placeTile(st_position(stage_data.maps[number].tiles[i][j].tile3.x, stage_data.maps[number].tiles[i][j].tile3.y), st_position((i*TILESIZE)-scroll.x, (j*TILESIZE)-scroll.y), &graphLib.gameScreen);
                                     draw_lib.update_screen();
 									tiles_showed++;
 								}
@@ -1173,7 +1307,7 @@ void classMap::redraw_boss_door(bool is_close, int nTiles, int tileX, int tileY,
                                     }
 
 
-                                    graphLib.placeTile(st_position(stage_data.maps[number].tiles[i][j].tile3.x, stage_data.maps[number].tiles[i][j].tile3.y), st_position((i*TILESIZE)-scroll.x, (j*TILESIZE)-scroll.y), &graphLib.gameScreen, game_save.stages[gameControl.currentStage]);
+                                    graphLib.placeTile(st_position(stage_data.maps[number].tiles[i][j].tile3.x, stage_data.maps[number].tiles[i][j].tile3.y), st_position((i*TILESIZE)-scroll.x, (j*TILESIZE)-scroll.y), &graphLib.gameScreen);
                                     draw_lib.update_screen();
 									tiles_showed++;
 								}
@@ -1186,7 +1320,7 @@ void classMap::redraw_boss_door(bool is_close, int nTiles, int tileX, int tileY,
                             }
 
 
-                            graphLib.placeTile(st_position(stage_data.maps[number].tiles[i][j].tile3.x, stage_data.maps[number].tiles[i][j].tile3.y), st_position((i*TILESIZE)+scroll.x, (j*TILESIZE)-scroll.y), &graphLib.gameScreen, game_save.stages[gameControl.currentStage]);
+                            graphLib.placeTile(st_position(stage_data.maps[number].tiles[i][j].tile3.x, stage_data.maps[number].tiles[i][j].tile3.y), st_position((i*TILESIZE)+scroll.x, (j*TILESIZE)-scroll.y), &graphLib.gameScreen);
 						}
 				}
 			}
@@ -1210,6 +1344,7 @@ void classMap::redraw_boss_door(bool is_close, int nTiles, int tileX, int tileY,
 
 void classMap::add_animation(ANIMATION_TYPES pos_type, graphicsLib_gSurface* surface, const st_float_position &pos, st_position adjust_pos, unsigned int frame_time, unsigned int repeat_times, int direction, st_size framesize)
 {
+    //std::cout << ">>>>> classMap::add_animation - repeat_times: " << repeat_times << std::endl;
 	animation_list.push_back(animation(pos_type, surface, pos, adjust_pos, frame_time, repeat_times, direction, framesize, &scroll));
 }
 
@@ -1261,11 +1396,13 @@ void classMap::move_npcs() /// @TODO - check out of screen
 
 
         if ((*npc_it)->is_on_screen() != true) {
-            if (dead_state == 2 && (*npc_it)->is_boss() == false) {
+            if (dead_state == 2 && (*npc_it)->is_boss() == false && (*npc_it)->is_subboss()) {
                 (*npc_it)->revive();
             }
             continue; // no need for moving NPCs that are out of sight
         } else if (dead_state == 2 && (*npc_it)->auto_respawn() == true && (*npc_it)->is_boss() == false) {
+            std::cout << "DEAD-NPC - reset and respawn" << std::endl;
+            (*npc_it)->reset_position();
             (*npc_it)->revive();
             continue;
         } else if (dead_state == 1 && (*npc_it)->is_spawn() == false && (*npc_it)->is_boss() == false) {// drop item
@@ -1291,7 +1428,17 @@ void classMap::move_npcs() /// @TODO - check out of screen
 		if (dead_state == 1) {
             if ((*npc_it)->is_stage_boss() == false) {
                 (*npc_it)->execute_ai(); // to ensure death-reaction is run
-                add_animation(ANIMATION_STATIC, &graphLib.explosion32, (*npc_it)->getPosition(), st_position(-8, -8), 80, 2, (*npc_it)->get_direction(), st_size(32, 32));
+                // sub-boss have a different explosion
+                if ((*npc_it)->is_subboss()) {
+                    soundManager.play_repeated_sfx(SFX_BIG_EXPLOSION, 1);
+                    st_float_position pos1((*npc_it)->getPosition().x+2, (*npc_it)->getPosition().y+20);
+                    add_animation(ANIMATION_STATIC, &graphLib.bomb_explosion_surface, pos1, st_position(-8, -8), 80, 2, (*npc_it)->get_direction(), st_size(56, 56));
+                    st_float_position pos2(pos1.x+50, pos1.y-30);
+                    add_animation(ANIMATION_STATIC, &graphLib.bomb_explosion_surface, pos2, st_position(-8, -8), 80, 2, (*npc_it)->get_direction(), st_size(56, 56));
+                } else {
+                    add_animation(ANIMATION_STATIC, &graphLib.explosion32, (*npc_it)->getPosition(), st_position(-8, -8), 80, 2, (*npc_it)->get_direction(), st_size(32, 32));
+                }
+                // check if boss flag wasn't passed to a spawn on dying reaction AI
                 if ((*npc_it)->is_boss()) {
                     gameControl.check_player_return_teleport();
                 }
@@ -1341,7 +1488,7 @@ void classMap::show_npcs() /// @TODO - check out of screen
     }
 }
 
-void classMap::move_objects()
+void classMap::move_objects(bool paused)
 {
     /// @TODO - update timers
     std::vector<object>::iterator object_it;
@@ -1350,17 +1497,35 @@ void classMap::move_objects()
 			object_list.erase(object_it);
 			break;
 		} else {
-			(*object_it).execute(); // TODO: must pass scroll map to npcs somwhow...
+            (*object_it).execute(paused); // TODO: must pass scroll map to npcs somwhow...
 		}
     }
 }
 
-void classMap::show_objects()
+std::vector<object*> classMap::check_collision_with_objects(st_rectangle collision_area)
+{
+    std::vector<object*> res;
+    std::vector<object>::iterator object_it;
+
+    //std::cout << "### MAP::check_collision_with_objects::START ###" << std::endl;
+    for (int i=0; i<object_list.size(); i++) {
+        object* temp_obj = &object_list.at(i);
+        colision_detection rect_colision_obj;
+        bool res_collision = rect_colision_obj.rect_overlap(temp_obj->get_area(), collision_area);
+        if (res_collision == true) {
+            //std::cout << "### Found object that collides ###" << std::endl;
+            res.push_back(temp_obj);
+        }
+    }
+    return res;
+}
+
+void classMap::show_objects(int adjust_y)
 {
     /// @TODO - update timers
     std::vector<object>::iterator object_it;
     for (object_it = object_list.begin(); object_it != object_list.end(); object_it++) {
-        (*object_it).show(); // TODO: must pass scroll map to npcs somwhow...
+        (*object_it).show(adjust_y, 0); // TODO: must pass scroll map to npcs somwhow...
     }
 }
 
@@ -1371,13 +1536,19 @@ bool classMap::boss_hit_ground()
         if ((*npc_it)->is_boss() == true && (*npc_it)->is_on_visible_screen() == true) {
             //std::cout << "MAP::boss_hit_ground - move boss to ground - pos.y: " << (*npc_it)->getPosition().y << std::endl;
 
+            int limit_y = (*npc_it)->get_start_position().y - TILESIZE;
+            //std::cout << "#### limit_y: " << limit_y << std::endl;
+            if (limit_y > RES_H/2) {
+                limit_y = RES_H/2;
+            }
+
             if ((*npc_it)->is_able_to_fly() == true) {
                 //std::cout << "MAP::boss_hit_ground - pos.y: " << (*npc_it)->getPosition().y << ", center: " << (RES_H/2 - (*npc_it)->get_size().height/2) << std::endl;
                 if ((*npc_it)->getPosition().y >= RES_H/2 - (*npc_it)->get_size().height/2) {
                     //std::cout << "boss_hit_ground #1" << std::endl;
                     return true;
                 }
-            } else if ((*npc_it)->getPosition().y > TILESIZE*2 && (*npc_it)->hit_ground()) {
+            } else if ((*npc_it)->getPosition().y >= limit_y && (*npc_it)->hit_ground()) {
                 //std::cout << "boss_hit_ground #2" << std::endl;
                 return true;
             }

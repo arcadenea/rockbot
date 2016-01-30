@@ -156,9 +156,9 @@ private:
     /**
      * @brief
      *
-     * @return unsigned short
+     * @return Uint8
      */
-    unsigned short int select_player();
+    Uint8 select_player();
     /**
      * @brief
      *

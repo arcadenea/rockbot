@@ -72,7 +72,7 @@ void npcPreviewArea::paintEvent(QPaintEvent *) {
 
 
 
-    if (bg_image.isNull() == false) {
+    if (bg_image.isNull() == false && bg_image.width() > 0) {
         bg_image_w = bg_image.width();
         bg_image_h = bg_image.height();
         bg_image = bg_image.scaled(bg_image.width()*2, bg_image.height()*2);
@@ -84,7 +84,7 @@ void npcPreviewArea::paintEvent(QPaintEvent *) {
 	// draw the picked tile in the tileset
 
 
-    if (image.isNull()) {
+    if (image.isNull() == true || image.width() <= 0) {
         //std::cout << "NOT Drawing FG_image (" << graphic_filename << ")" << std::endl;
         return;
     }

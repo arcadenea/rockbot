@@ -40,12 +40,6 @@ private slots:
 
     void on_players_tab_maxshots_valueChanged(int arg1);
 
-    void on_players_tab_fallgravity_valueChanged(double arg1);
-
-    void on_players_tab_jumpgravity_valueChanged(double arg1);
-
-    void on_players_tab_jumpspeed_valueChanged(double arg1);
-
     void on_can_slide_checkbox_toggled(bool checked);
 
     void on_players_tab_list_combo_2_currentIndexChanged(int index);
@@ -81,6 +75,16 @@ private slots:
     void on_weaponlist_combo_currentIndexChanged(int index);
 
     void on_players_tab_movespeed_valueChanged(double arg1);
+
+    void on_damageModSpinBox_valueChanged(int arg1);
+
+    void on_canDoubleJumpCheckBox_toggled(bool checked);
+
+    void on_CanAirDashCheckBox_toggled(bool checked);
+
+    void on_canShotDiagonal_toggled(bool checked);
+
+    void on_playerFace_comboBox_currentIndexChanged(const QString &arg1);
 
 private:
     void fill_players_data();

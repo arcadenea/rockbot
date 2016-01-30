@@ -118,9 +118,6 @@ void DialogObjectEdit::loadObjectData(int object_n) {
 
 
 void DialogObjectEdit::saveObjectData(int object_n) {
-	if (game_data.objects[object_n].id == -1) {
-		game_data.objects[object_n].id = object_n;
-	}
 	strcpy (game_data.objects[object_n].name, ui->NpcName->text().toLatin1());
 	game_data.objects[object_n].type = ui->comboBoxType->currentIndex();
 	game_data.objects[object_n].size.width = ui->npcGraphicSizeSpin_w->value();

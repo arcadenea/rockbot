@@ -1,6 +1,8 @@
 #ifndef V_2_0_0_H
 #define V_2_0_0_H
 
+#include "../file/format/st_common.h"
+
 // new file format, a single file structured into limited-size arrays;
 /// @NOTE: an id negative (-1) means the struct is empty/deleted
 namespace format_v2_0 {

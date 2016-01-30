@@ -35,19 +35,8 @@ win32 {
 TEMPLATE = app
 
 
-SOURCES += main.cpp \
-    ../../file/file_io.cpp
+SOURCES += main.cpp
 
-HEADERS += \
-    ../../file/format.h \
-    ../../file/file_io.h \
-    ../../file/v_2_0_0.h \
-    ../../file/v_1.h \
-    ../../file/v_2_0_1.h \
-    ../../file/v_2_0_2.h \
-    ../../file/v_2_0_3.h \
-    ../../file/v_2_0_4.h \
-    ../../file/v_2_1.h \
-    ../../file/v_2_1_1.h
+HEADERS +=
 
 

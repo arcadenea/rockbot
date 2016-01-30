@@ -74,14 +74,14 @@ public:
      * @param weapon_n id of the weapon
      * @param value value to be set as energy points for this weapon
      */
-    void set_weapon_value(unsigned short int weapon_n, unsigned short int value);
+    void set_weapon_value(Uint8 weapon_n, Uint8 value);
 
     /**
      * @brief returns the colors the player must show when using a given weapon
      * @param weapon_n id of the weapon
-     * @return format_v2_0::file_weapon_colors struct that contains the three colors player can change
+     * @return CURRENT_FILE_FORMAT::file_weapon_colors struct that contains the three colors player can change
      */
-    format_v2_0::file_weapon_colors get_weapon_colors(short int weapon_n);
+    CURRENT_FILE_FORMAT::file_weapon_colors get_weapon_colors(short int weapon_n);
 
     /**
      * @brief return the weapon player is currently using
@@ -111,6 +111,18 @@ public:
      *
      */
     void reset_charging_shot();
+
+    bool is_teleporting();
+
+    /**
+     * @brief recharge player's HP or current weapon
+     * @param _en_type HP or WEAPON to be recharged
+     * @param value total amount of points that will be recharged
+     */
+    void recharge(e_energy_types _en_type, int value);
+
+    void damage(unsigned int damage_points, bool ignore_hit_timer);
+
 
 
 private:
@@ -142,12 +154,6 @@ private:
      */
     bool get_item(object_colision& obj_info);
 
-    /**
-     * @brief recharge player's HP or current weapon
-     * @param _en_type HP or WEAPON to be recharged
-     * @param value total amount of points that will be recharged
-     */
-    void recharge(e_energy_types _en_type, int value);
 
     /**
      * @brief execute an attack, including weapon usage
@@ -189,14 +195,35 @@ private:
 
     void clean_move_commands();
 
+    bool can_shoot_diagonal();
+
+    bool can_double_jump();
+
+    void update_armor_properties(); // this will update certain properties of player with data of the armor pieces abilities
+
+
+    bool can_air_dash();
+
+
+    int get_hit_push_back_n();
+
+    bool have_super_shot();
+
+    bool have_laser_shot();
+
+    bool have_shoryuken();
+
+    bool shoryuken();
+
+    void consume_weapon(int value);
 
 
 private:
     int teleporter_n; /**< current teleporter being used, -1 if none */
     short selected_weapon; /**< current selected weapon */
-    format_v2_0::file_weapon_colors weapon_colors[MAX_WEAPON_N]; /**< TODO */
+    CURRENT_FILE_FORMAT::file_weapon_colors weapon_colors[MAX_WEAPON_N]; /**< TODO */
     bool l_key_released; /**< avoid changing weapon continuously if L key is held */
-    bool r_key_released; /**< avoid changing weapon continuously if R key is held */
+    bool r_key_released;            // < avoid changing weapon continuously if R key is held
     bool _weapons_array[WEAPON_COUNT];
 };
 

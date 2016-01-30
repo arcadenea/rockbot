@@ -7,17 +7,23 @@
     <x>0</x>
     <y>0</y>
     <width>870</width>
-    <height>638</height>
+    <height>443</height>
    </rect>
   </property>
   <property name="sizePolicy">
-   <sizepolicy hsizetype="Maximum" vsizetype="Maximum">
+   <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
     <horstretch>0</horstretch>
     <verstretch>0</verstretch>
    </sizepolicy>
   </property>
+  <property name="maximumSize">
+   <size>
+    <width>16777215</width>
+    <height>16777215</height>
+   </size>
+  </property>
   <property name="windowTitle">
-   <string>Rockbot Editor 1.0.0</string>
+   <string/>
   </property>
   <widget class="QWidget" name="centralWidget">
    <property name="sizePolicy">
@@ -36,61 +42,265 @@
        <attribute name="title">
         <string>Game Properties</string>
        </attribute>
-       <layout class="QGridLayout" name="gridLayout_16"/>
+       <layout class="QGridLayout" name="gridLayout_16">
+        <item row="0" column="0">
+         <widget class="QScrollArea" name="gamePropertiesScrollarea">
+          <property name="widgetResizable">
+           <bool>true</bool>
+          </property>
+          <widget class="QWidget" name="GamePropertiesScrollareaContents">
+           <property name="geometry">
+            <rect>
+             <x>0</x>
+             <y>0</y>
+             <width>98</width>
+             <height>28</height>
+            </rect>
+           </property>
+          </widget>
+         </widget>
+        </item>
+       </layout>
       </widget>
       <widget class="QWidget" name="stage_tab">
        <attribute name="title">
         <string>Stages</string>
        </attribute>
-       <layout class="QGridLayout" name="gridLayout_5"/>
+       <layout class="QGridLayout" name="gridLayout_5">
+        <item row="0" column="0">
+         <widget class="QScrollArea" name="StagesScrollarea">
+          <property name="widgetResizable">
+           <bool>true</bool>
+          </property>
+          <widget class="QWidget" name="scrollAreaWidgetContents">
+           <property name="geometry">
+            <rect>
+             <x>0</x>
+             <y>0</y>
+             <width>98</width>
+             <height>28</height>
+            </rect>
+           </property>
+          </widget>
+         </widget>
+        </item>
+       </layout>
       </widget>
       <widget class="QWidget" name="maps_tab">
        <attribute name="title">
         <string>Maps</string>
        </attribute>
-       <layout class="QGridLayout" name="gridLayout_17"/>
+       <layout class="QGridLayout" name="gridLayout_17">
+        <item row="0" column="0">
+         <widget class="QScrollArea" name="MapScrollArea">
+          <property name="widgetResizable">
+           <bool>true</bool>
+          </property>
+          <widget class="QWidget" name="scrollAreaWidgetContents_2">
+           <property name="geometry">
+            <rect>
+             <x>0</x>
+             <y>0</y>
+             <width>828</width>
+             <height>295</height>
+            </rect>
+           </property>
+          </widget>
+         </widget>
+        </item>
+       </layout>
       </widget>
       <widget class="QWidget" name="weapon_edit_tab">
        <attribute name="title">
         <string>Weapons</string>
        </attribute>
-       <layout class="QHBoxLayout" name="horizontalLayout_8"/>
+       <layout class="QHBoxLayout" name="horizontalLayout_8">
+        <item>
+         <widget class="QScrollArea" name="WeaponScrollArea">
+          <property name="widgetResizable">
+           <bool>true</bool>
+          </property>
+          <widget class="QWidget" name="scrollAreaWidgetContents_3">
+           <property name="geometry">
+            <rect>
+             <x>0</x>
+             <y>0</y>
+             <width>98</width>
+             <height>28</height>
+            </rect>
+           </property>
+          </widget>
+         </widget>
+        </item>
+       </layout>
       </widget>
       <widget class="QWidget" name="tab_projectiles">
        <attribute name="title">
         <string>Projectiles</string>
        </attribute>
-       <layout class="QVBoxLayout" name="verticalLayout_2"/>
+       <layout class="QVBoxLayout" name="verticalLayout_2">
+        <item>
+         <widget class="QScrollArea" name="ProjectileScrollArea">
+          <property name="widgetResizable">
+           <bool>true</bool>
+          </property>
+          <widget class="QWidget" name="scrollAreaWidgetContents_4">
+           <property name="geometry">
+            <rect>
+             <x>0</x>
+             <y>0</y>
+             <width>98</width>
+             <height>28</height>
+            </rect>
+           </property>
+          </widget>
+         </widget>
+        </item>
+       </layout>
       </widget>
       <widget class="QWidget" name="npc_tab">
        <attribute name="title">
         <string>NPCs</string>
        </attribute>
-       <layout class="QGridLayout" name="gridLayout_11"/>
+       <layout class="QGridLayout" name="gridLayout_11">
+        <item row="0" column="0">
+         <widget class="QScrollArea" name="NPCScrollArea">
+          <property name="widgetResizable">
+           <bool>true</bool>
+          </property>
+          <widget class="QWidget" name="scrollAreaWidgetContents_5">
+           <property name="geometry">
+            <rect>
+             <x>0</x>
+             <y>0</y>
+             <width>98</width>
+             <height>28</height>
+            </rect>
+           </property>
+          </widget>
+         </widget>
+        </item>
+       </layout>
       </widget>
       <widget class="QWidget" name="ai_tab">
        <attribute name="title">
         <string>Artificial Inteligence</string>
        </attribute>
-       <layout class="QGridLayout" name="gridLayout_12"/>
+       <layout class="QGridLayout" name="gridLayout_12">
+        <item row="0" column="0">
+         <widget class="QScrollArea" name="AIScrollArea">
+          <property name="widgetResizable">
+           <bool>true</bool>
+          </property>
+          <widget class="QWidget" name="scrollAreaWidgetContents_6">
+           <property name="geometry">
+            <rect>
+             <x>0</x>
+             <y>0</y>
+             <width>98</width>
+             <height>28</height>
+            </rect>
+           </property>
+          </widget>
+         </widget>
+        </item>
+       </layout>
       </widget>
       <widget class="QWidget" name="object_tab">
        <attribute name="title">
         <string>Objects</string>
        </attribute>
-       <layout class="QGridLayout" name="gridLayout_14"/>
+       <layout class="QGridLayout" name="gridLayout_14">
+        <item row="0" column="0">
+         <widget class="QScrollArea" name="ObjectScrollArea">
+          <property name="widgetResizable">
+           <bool>true</bool>
+          </property>
+          <widget class="QWidget" name="scrollAreaWidgetContents_7">
+           <property name="geometry">
+            <rect>
+             <x>0</x>
+             <y>0</y>
+             <width>98</width>
+             <height>28</height>
+            </rect>
+           </property>
+          </widget>
+         </widget>
+        </item>
+       </layout>
       </widget>
       <widget class="QWidget" name="colorcycle_tab">
        <attribute name="title">
         <string>Colorcycle</string>
        </attribute>
-       <layout class="QGridLayout" name="gridLayout_15"/>
+       <layout class="QGridLayout" name="gridLayout_15">
+        <item row="0" column="0">
+         <widget class="QScrollArea" name="ColorcycleScrollArea">
+          <property name="widgetResizable">
+           <bool>true</bool>
+          </property>
+          <widget class="QWidget" name="scrollAreaWidgetContents_8">
+           <property name="geometry">
+            <rect>
+             <x>0</x>
+             <y>0</y>
+             <width>98</width>
+             <height>28</height>
+            </rect>
+           </property>
+          </widget>
+         </widget>
+        </item>
+       </layout>
       </widget>
       <widget class="QWidget" name="player_tab">
        <attribute name="title">
         <string>Player Edit</string>
        </attribute>
-       <layout class="QGridLayout" name="gridLayout_18"/>
+       <layout class="QGridLayout" name="gridLayout_18">
+        <item row="0" column="0">
+         <widget class="QScrollArea" name="PlayerScrollArea">
+          <property name="widgetResizable">
+           <bool>true</bool>
+          </property>
+          <widget class="QWidget" name="scrollAreaWidgetContents_9">
+           <property name="geometry">
+            <rect>
+             <x>0</x>
+             <y>0</y>
+             <width>98</width>
+             <height>28</height>
+            </rect>
+           </property>
+          </widget>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+      <widget class="QWidget" name="armor_tab">
+       <attribute name="title">
+        <string>Armor Pieces</string>
+       </attribute>
+       <layout class="QGridLayout" name="gridLayout_2">
+        <item row="0" column="0">
+         <widget class="QScrollArea" name="armorScrollArea">
+          <property name="widgetResizable">
+           <bool>true</bool>
+          </property>
+          <widget class="QWidget" name="scrollAreaWidgetContents_10">
+           <property name="geometry">
+            <rect>
+             <x>0</x>
+             <y>0</y>
+             <width>98</width>
+             <height>28</height>
+            </rect>
+           </property>
+          </widget>
+         </widget>
+        </item>
+       </layout>
       </widget>
      </widget>
     </item>
@@ -105,13 +315,15 @@
    </attribute>
    <addaction name="actionNew"/>
    <addaction name="actionOpen"/>
-   <addaction name="separator"/>
    <addaction name="actionSave"/>
    <addaction name="separator"/>
    <addaction name="actionEdit_Tileset"/>
    <addaction name="actionEdit_NPC"/>
-   <addaction name="actionAdd_Object"/>
+   <addaction name="separator"/>
+   <addaction name="actionAction_subboss"/>
    <addaction name="actionSet_Boss"/>
+   <addaction name="separator"/>
+   <addaction name="actionAdd_Object"/>
   </widget>
   <widget class="QStatusBar" name="statusBar"/>
   <widget class="QToolBar" name="editToolBar">
@@ -143,7 +355,7 @@
      <x>0</x>
      <y>0</y>
      <width>870</width>
-     <height>22</height>
+     <height>20</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFILE">
@@ -155,6 +367,8 @@
     <addaction name="actionSave"/>
     <addaction name="actionSwap_Maps"/>
     <addaction name="actionReset_Map"/>
+    <addaction name="separator"/>
+    <addaction name="actionScenes_Editor"/>
     <addaction name="separator"/>
     <addaction name="actionQuit"/>
    </widget>
@@ -184,7 +398,9 @@
      <addaction name="actionThree"/>
     </widget>
     <addaction name="menuLevel"/>
-    <addaction name="actionBeaten"/>
+    <addaction name="actionObjects"/>
+    <addaction name="actionNPCs"/>
+    <addaction name="actionTeleporters"/>
    </widget>
    <addaction name="menuFILE"/>
    <addaction name="menuEdit"/>
@@ -207,6 +423,9 @@
    </property>
   </action>
   <action name="actionNew">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
    <property name="icon">
     <iconset>
      <normalon>:/toolbar_icons/New</normalon>
@@ -217,6 +436,9 @@
    </property>
   </action>
   <action name="actionOpen">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
    <property name="icon">
     <iconset resource="resources/icons/icons.qrc">
      <normaloff>:/toolbar_icons/Open</normaloff>
@@ -295,6 +517,9 @@
    <property name="checkable">
     <bool>true</bool>
    </property>
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
    <property name="icon">
     <iconset resource="resources/icons/icons.qrc">
      <normaloff>:/toolbar_icons/Fill</normaloff>:/toolbar_icons/Fill</iconset>
@@ -336,7 +561,7 @@
    </property>
    <property name="icon">
     <iconset resource="resources/icons/icons.qrc">
-     <normaloff>:/toolbar_icons/im-user.png</normaloff>:/toolbar_icons/im-user.png</iconset>
+     <normaloff>:/toolbar_icons/Manager-icon.png</normaloff>:/toolbar_icons/Manager-icon.png</iconset>
    </property>
    <property name="text">
     <string>Edit NPC</string>
@@ -405,13 +630,13 @@
    </property>
    <property name="icon">
     <iconset resource="resources/icons/icons.qrc">
-     <normaloff>:/toolbar_icons/Add Npc</normaloff>:/toolbar_icons/Add Npc</iconset>
+     <normaloff>:/toolbar_icons/4a6b77ae99a98d0d3a0a68a6b5491305.png</normaloff>:/toolbar_icons/4a6b77ae99a98d0d3a0a68a6b5491305.png</iconset>
    </property>
    <property name="text">
     <string>Set Boss</string>
    </property>
    <property name="toolTip">
-    <string>Set Boss</string>
+    <string>Set Stage Boss</string>
    </property>
   </action>
   <action name="actionReset_Map">
@@ -431,16 +656,57 @@
     <string>Swap Stages</string>
    </property>
   </action>
-  <action name="actionBeaten">
+  <action name="actionAction_subboss">
    <property name="checkable">
     <bool>true</bool>
    </property>
    <property name="icon">
     <iconset resource="resources/icons/icons.qrc">
-     <normaloff>:/toolbar_icons/task-recurring.png</normaloff>:/toolbar_icons/task-recurring.png</iconset>
+     <normaloff>:/toolbar_icons/Knight-icon.png</normaloff>:/toolbar_icons/Knight-icon.png</iconset>
    </property>
    <property name="text">
-    <string>Beaten</string>
+    <string>action_subboss</string>
+   </property>
+   <property name="toolTip">
+    <string>Set sub-boss</string>
+   </property>
+  </action>
+  <action name="actionScenes_Editor">
+   <property name="text">
+    <string>Scenes Editor</string>
+   </property>
+  </action>
+  <action name="actionObjects">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Objects</string>
+   </property>
+  </action>
+  <action name="actionNPCs">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Enemies</string>
+   </property>
+  </action>
+  <action name="actionTeleporters">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Teleporters</string>
    </property>
   </action>
  </widget>

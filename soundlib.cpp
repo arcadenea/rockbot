@@ -36,12 +36,7 @@ void soundLib::play_sfx(int sfx) {
 	}
 
 	if (sfx_list[sfx] != NULL) {
-		int mix_channel = Mix_PlayChannel(-1, sfx_list[sfx], 0);
-        /*
-		if (mix_channel == -1) {
-			std::cout << "Error playing SFX" << std::endl;
-		}
-        */
+        Mix_PlayChannel(-1, sfx_list[sfx], 0);
 	} else {
 		cout << "Error: soundLib::play_sfx - null sfx\n";
 	}
@@ -203,6 +198,20 @@ void soundLib::load_all_sfx() {
     filename = FILEPATH + "data/sfx/disappearning_block.wav";
     sfx_list[SFX_DISAPPEARING_BLOCK] = Mix_LoadWAV(filename.c_str());
     i++;
+
+    filename = FILEPATH + "data/sfx/hadouken_girl.wav";
+    sfx_list[SFX_HADOUKEN_GIRL] = Mix_LoadWAV(filename.c_str());
+    i++;
+
+    filename = FILEPATH + "data/sfx/shoryuken_girl.wav";
+    sfx_list[SFX_SHORYUKEN_GIRL] = Mix_LoadWAV(filename.c_str());
+    i++;
+
+    filename = FILEPATH + "data/sfx/beam.wav";
+    sfx_list[SFX_BEAM] = Mix_LoadWAV(filename.c_str());
+    i++;
+
+
 
     /*
     for (int j=0; j<i; j++) {

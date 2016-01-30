@@ -39,8 +39,6 @@ private slots:
 
 	void on_npc_edit_tab_range_valueChanged(int arg1);
 
-	void on_pushButton_11_clicked();
-
 	void on_npc_edit_tab_frametype_currentIndexChanged(int index);
 
 	void on_bg_graphic_combo_currentIndexChanged(const QString &arg1);
@@ -48,8 +46,6 @@ private slots:
 	void on_npc_edit_tab_weakness_list_currentIndexChanged(int index);
 
 	void on_npc_edit_tab_weakness_points_valueChanged(int arg1);
-
-	void on_AddFrame_Button_clicked();
 
 	void on_frame_list_selector_currentIndexChanged(int index);
 
@@ -59,12 +55,7 @@ private slots:
 
     void on_frameUp_clicked();
 
-    int get_npc_index_from_id(int id);
-
     void on_frameDown_clicked();
-
-	//void on_play_sprites_button_clicked();
-
 
     void on_frameList_listWidget_currentRowChanged(int currentRow);
 
@@ -99,6 +90,12 @@ private slots:
     void on_hitarea_w_spinBox_valueChanged(int arg1);
 
     void on_hitarea_h_spinBox_valueChanged(int arg1);
+
+    void on_isSubBoss_checkbox_toggled(bool checked);
+
+    void on_respawn_time_spinBox_valueChanged(int arg1);
+
+    void on_AddFrame_Button_clicked();
 
 private:
 	void fill_data();

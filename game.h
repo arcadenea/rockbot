@@ -55,11 +55,9 @@ public:
      *
      */
     void quick_load_game();
-    /**
-     * @brief
-     *
-     * @param can_characters_move
-     */
+
+
+    void update_stage_scrolling();
     void showGame(bool can_characters_move=true);
     /**
      * @brief
@@ -68,11 +66,7 @@ public:
      * @return int
      */
     int getMapPointLock(struct st_position);
-    /**
-     * @brief
-     *
-     */
-    void framerate_limiter();
+
     /**
      * @brief
      *
@@ -234,6 +228,11 @@ public:
      *
      */
     void remove_all_projectiles();
+
+    void reset_beam_objects();
+
+
+    void remove_players_slide();
     /**
      * @brief
      *
@@ -287,6 +286,12 @@ public:
     void unload_stage();
 
     void show_savegame_error();
+
+    void showGotArmorDialog(e_ARMOR_PIECES armor_type);
+
+    void object_teleport_boss(st_position dest_pos, int dest_map, int teleporter_id);
+
+    void remove_current_teleporter_from_list(); // used when player dies
 
 
 
@@ -343,27 +348,15 @@ private:
      * @param set_teleport_n
      * @param set_player_pos
      */
-    void set_player_teleporter(short set_teleport_n, st_position set_player_pos);
-    /**
-     * @brief
-     *
-     * @return bool
-     */
+    void set_player_teleporter(short set_teleport_n, st_position set_player_pos, bool is_object);
+
     bool is_player_on_teleporter() const;
 
-
-    /**
-     * @brief
-     *
-     */
     void finish_player_teleporter();
-    /**
-     * @brief
-     *
-     * @param wait_time
-     * @param move_npcs
-     */
+
     void show_stage(int wait_time, bool move_npcs);
+
+    bool subboss_alive_on_left(short tileX);
 
 
 
@@ -385,13 +378,12 @@ private:
     class_config config_manager; /**< TODO */
     dialogs game_dialogs; /**< TODO */
 	// framerate timers
-    int _t1; /**< TODO */
     float _frame_duration; /**< TODO */
     std::map<short, bool> _last_stage_used_teleporters; // list of used teleportes (they do not work anymore after added to this list) /**< TODO */
-    used_teleporter _player_teleporter; /**< TODO */
+    used_teleporter _player_teleporter;
     bool _show_boss_hp; // after set to true, will keep showing the boss HP bar on screen right side /**< TODO */
 
-    short _drop_item_list[DROP_ITEM_COUNT]; /**< TODO */
+    short _drop_item_list[DROP_ITEM_COUNT];
     bool invencible_old_value; // used to store flag value in order we don't loose it when setting to true due to temporary "got weapon" invencibility /**< TODO */
     bool _dark_mode;                    // on dark mode we only show animation and projectiles
 

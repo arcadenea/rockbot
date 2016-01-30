@@ -133,6 +133,14 @@ public:
 
     bool is_spawn();
 
+    bool is_subboss();
+
+    void reset_position();
+
+    st_position get_start_position();
+
+
+
 
 protected:
     /**
@@ -154,7 +162,6 @@ protected:
      */
     void build_basic_npc(int stage_id, int map_id, int main_id);
 
-    bool is_weak_to_freeze();                           // checks that this NPC is weak against the freeze weapon
 
 
 protected:

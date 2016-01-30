@@ -128,7 +128,7 @@ void DialogNPCEdit::changeEvent(QEvent *e)
 
 void DialogNPCEdit::fillNPCGraphicsList() {
 	printf("DEBUG - fillNPCGraphicsList - START\n");
-	qDebug(QString("dir: "+QString(EDITOR_FILEPATH)+"/data/images/sprites/enemies/").toAscii());
+    //qDebug(QString("dir: "+QString(EDITOR_FILEPATH)+"/data/images/sprites/enemies/"));
     QDir dir = QDir(QString(EDITOR_FILEPATH)+"/data/images/sprites/enemies/");
     dir.setFilter(QDir::Files | QDir::NoSymLinks | QDir::NoDotAndDotDot);
     dir.setSorting(QDir::Size | QDir::Reversed);

@@ -4,6 +4,8 @@
 #include <string>
 #include <vector>
 
+#include "file/format.h"
+
 
 /**
  * @brief
@@ -27,7 +29,11 @@ public:
      * @brief
      *
      */
-    void config_input() const;
+    void config_input();
+
+    void check_key_duplicates(CURRENT_FILE_FORMAT::st_game_config game_config_copy, int set_key, bool is_joystick);
+
+    void apply_key_codes_changes(CURRENT_FILE_FORMAT::st_game_config game_config_copy);
 
 
 private:

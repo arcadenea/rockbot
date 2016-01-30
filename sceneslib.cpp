@@ -1,6 +1,7 @@
 #include <cstdlib>
 #include "sceneslib.h"
 #include "soundlib.h"
+#include "scenes/password_generator.h"
 
 extern string FILEPATH;
 extern soundLib soundManager;
@@ -20,6 +21,7 @@ extern draw draw_lib;
 
 #include "stage_select.h"
 #include "graphic/option_picker.h"
+#include "file/version.h"
 #include "file/file_io.h"
 
 #include "options/key_map.h"
@@ -98,7 +100,11 @@ void scenesLib::preload_intro() { /// @TODO: check is memory is being freed, oth
 	filename = FILEPATH + "data/images/logo.png";
 	graphLib.surfaceFromFile(filename, &INTRO_SURFACES[INTRO_SURFACES_INTRO_SCREEN]);
 
-	filename = FILEPATH + "data/images/backgrounds/player_select.png";
+    if (game_config.game_finished == true) {
+        filename = FILEPATH + "data/images/backgrounds/player_select4.png";
+    } else {
+        filename = FILEPATH + "data/images/backgrounds/player_select.png";
+    }
 	graphLib.surfaceFromFile(filename, &INTRO_SURFACES[INTRO_SURFACES_PLAYER_SELECT_BG]);
 
 	filename = FILEPATH + "data/images/backgrounds/lights.png";
@@ -137,13 +143,6 @@ void scenesLib::preload_stage_select() const {
 	//backgrounds/stage_select_item.png
 	//backgrounds/stage_boss_intro.png
 }
-
-
-
-
-
-
-
 
 
 // ********************************************************************************************** //
@@ -485,7 +484,7 @@ void scenesLib::draw_main()
 	graphLib.copyArea(st_position(-graphLib.RES_DIFF_W, -graphLib.RES_DIFF_H+20), &INTRO_SURFACES[INTRO_SURFACES_INTRO_SCREEN], &graphLib.gameScreen);
 
     graphLib.draw_text(8, 70,"Kyoto Evolution!!");
-    graphLib.draw_text(220, 12,"V1.0.1");
+    graphLib.draw_text(220, 12, VERSION_NUMBER);
 
 	options.push_back("NEW GAME");
 	options.push_back("LOAD GAME");
@@ -493,7 +492,7 @@ void scenesLib::draw_main()
 	options.push_back("OPTIONS");
     options.push_back("CREDITS");
 
-    std::string text("\xA9 2009-2014 UPPERLAND STUDIOS");
+    std::string text("\xA9 2009-2015 UPPERLAND STUDIOS");
 	graphLib.draw_text(40-graphLib.RES_DIFF_W, (RES_H-35), text);
 }
 
@@ -517,6 +516,8 @@ void scenesLib::main_screen()
     }
 	bool repeat_menu = true;
 	while (repeat_menu == true) {
+        std::cout << "######## MAIN_MENU::LOOP" << std::endl;
+
 		picked_n = main_picker.pick();
 		if (picked_n == -1) {
 #if !defined(PLAYSTATION2) && !defined(PSP) && !defined(WII) && !defined(DREAMCAST)
@@ -534,6 +535,7 @@ void scenesLib::main_screen()
 			}
 		} else if (picked_n == 2) {
             if (show_password_input() == true) {
+                std::cout << "######## MAIN_MENU::PASSWORD END" << std::endl;
 				repeat_menu = false;
 			} else {
 				draw_main();
@@ -550,7 +552,7 @@ void scenesLib::main_screen()
             main_picker.draw();
         }
 	}
-
+    std::cout << "######## MAIN_MENU::LEAVE" << std::endl;
     draw_lib.update_screen();
 
 
@@ -583,7 +585,7 @@ short scenesLib::pick_stage() {
 
     if (pos_n == SKULLCASTLE1) { // look for the actual stage in skullcastle
         for (int i=SKULLCASTLE1; i<SKULLCASTLE5; i++) {
-            std::cout << "Check stage[" << i << "]: " << game_save.stages[i] << std::endl;
+            std::cout << "Check stage[" << i << "]: " << (int)game_save.stages[i] << std::endl;
             if (game_save.stages[i] == 0) {
                 break;
             }
@@ -790,6 +792,7 @@ void scenesLib::show_config_audio()
 
 bool scenesLib::password_ball_selector()
 {
+    std::cout << "password_ball_selector::START" << std::endl;
 	int selected_ball = 0; // blue, 1 is red
 	st_position blue_ball_pos(236, 60);
 	st_position red_ball_pos(252, 60);
@@ -797,10 +800,9 @@ bool scenesLib::password_ball_selector()
     draw_lib.update_screen();
 
 	input.clean();
-	input.waitTime(200);
-	//int display_timer = timer.getTimer() + 100;
+    timer.delay(10);
+
 	while (true) {
-		input.clean();
 		input.readInput();
 		if (input.p1_input[BTN_LEFT] == 1 || input.p1_input[BTN_RIGHT] == 1) {
 			soundManager.play_sfx(SFX_CURSOR);
@@ -829,70 +831,79 @@ bool scenesLib::password_ball_selector()
 		} else if (input.p1_input[BTN_ATTACK] == 1 || input.p1_input[BTN_START] == 1 || input.p1_input[BTN_DOWN]) {
 			graphLib.copyArea(st_rectangle(0, _password_selector.gSurface->h/2, _password_selector.gSurface->w, _password_selector.gSurface->h), red_ball_pos, &_password_selector, &graphLib.gameScreen);
 			graphLib.copyArea(st_rectangle(0, _password_selector.gSurface->h/2, _password_selector.gSurface->w, _password_selector.gSurface->h), blue_ball_pos, &_password_selector, &graphLib.gameScreen);
-			return password_end_selector();
+            bool res = password_end_selector();
+            std::cout << ">>>>>>>>>>>>>>>>>>>>>>>>>>> #1" << std::endl;
+            return res;
 		}
+        input.clean();
+        timer.delay(10);
         draw_lib.update_screen();
-		timer.delay(20);
-	}
+    }
 }
 
 bool scenesLib::password_set()
 {
-	// @TODO - save_game.reset
-	/*
 	for (int y=0; y<PASSWORD_GRID_SIZE; y++) {
 		for (int x=0; x<PASSWORD_GRID_SIZE; x++) {
-			std::cout << "[";
-			if (_password_selected_balls[x][y] == -1) {
-				std::cout << " ";
-			} else if (_password_selected_balls[x][y] == 0) {
-				std::cout << "B";
-			} else if (_password_selected_balls[x][y] == 1) {
-				std::cout << "R";
-			}
-			std::cout << "]";
-		}
-		std::cout << std::endl;
-	}
-	*/
+            //if (_password_selected_balls[x][y] != -1) { std::cout << "password at[" << x << "][" << y << "]: " << _password_selected_balls[x][y] << std::endl; }
 
-
-	for (int y=0; y<PASSWORD_GRID_SIZE; y++) {
-		for (int x=0; x<PASSWORD_GRID_SIZE; x++) {
-			if (_password_selected_balls[x][y] != -1) {
-				std::cout << "password at[" << x << "][" << y << "]: " << _password_selected_balls[x][y] << std::endl;
-			}
             /*
-            [3, 5]d6 blue -> techno - OK
+
+              NUMERO É X, LETRA É Y
+
+            [1, 0]a2 blue -> char #3 (candy?)
+            [5, 3]d6 blue -> techno - OK
             [5, 5]f6 blue -> daisie - OK
-            [2, 3]c4 blue -> mummy - OK
-            [5, 4]f5 blue -> spike - OK
+            [3, 2]c4 blue -> mummy - OK
+            [4, 5]f5 blue -> spike - OK
 
                 [0, 0]a1 -> castle #1
                 [1, 1]b2 -> castle #2
-                [4, 0]e1 -> castle #3
-                [4, 2]e3 -> castle #4
+                [0, 4]e1 -> castle #3
+                [2, 4]e3 -> castle #4
 
 
             */
 			if (_password_selected_balls[x][y] == 0) { // blue
-				if (x == 3 && y == 5) {
+
+                std::cout << "PASSWORD[BLUE] [" << x << "][" << y << "]" << std::endl;
+
+                if (x == 1 && y == 0) {
+                    game_save.selected_player = PLAYER_CANDYBOT;
+                } else if (x == 5 && y == 3) {
 					game_save.stages[TECHNOBOT] = 1;
 				} else if (x == 5 && y == 5) {
 					game_save.stages[DAISIEBOT] = 1;
-				} else if (x == 2 && y == 3) {
+                } else if (x == 3 && y == 2) {
 					game_save.stages[MUMMYBOT] = 1;
-				} else if (x == 5 && y == 4) {
+                } else if (x == 4 && y == 5) {
 					game_save.stages[SPIKEBOT] = 1;
 
                 } else if (x == 0 && y == 0) {
                     game_save.stages[SKULLCASTLE1] = 1;
                 } else if (x == 1 && y == 1) {
                     game_save.stages[SKULLCASTLE2] = 1;
-                } else if (x == 4 && y == 0) {
+                } else if (x == 0 && y == 4) {
                     game_save.stages[SKULLCASTLE3] = 1;
-                } else if (x == 4 && y == 2) {
+                } else if (x == 2 && y == 4) {
                     game_save.stages[SKULLCASTLE4] = 1;
+
+
+                // weapon-tank: y 5, x 0
+                } else if (x == 0 && y == 5) {
+                    game_save.items.weapon_tanks = 1;
+                // special tank y 5, x 2
+                } else if (x == 2 && y == 5) {
+                    game_save.items.special_tanks = 1;
+
+                // armor pieces: linha4, coluna 1 -> armor, 2 -> hands, 4 -> legs
+                } else if (x == 1 && y == 4) {
+                    game_save.armor_pieces[ARMOR_BODY] = true;
+                } else if (x == 2 && y == 4) {
+                    game_save.armor_pieces[ARMOR_ARMS] = true;
+                } else if (x == 4 && y == 4) {
+                    game_save.armor_pieces[ARMOR_LEGS] = true;
+
 
 
 				} else {
@@ -900,77 +911,75 @@ bool scenesLib::password_set()
 					return false;
 				}
 			} else if (_password_selected_balls[x][y] == 1) { // red
+
+                std::cout << "PASSWORD[RED] [" << x << "][" << y << "]" << std::endl;
+
 				/*
-				[2, 0]c1 red  -> initial-stage
-				[0, 2]a3 red  -> magebot
-				[1, 4]b5 red  -> dynamite
-				[3, 2]d3 red  -> seahorse
-				[5, 3]f4 red  -> apebot
+                [1, 0]a2 red -> betabot
+                [2, 1]b3 red -> p#4 (kitty?)
+                [0, 2]c1 red  -> initial-stage
+                [2, 0]a3 red  -> magebot
+                [4, 1]b5 red  -> dynamite
+                [2, 3]d3 red  -> seahorse
+                [3, 5]f4 red  -> apebot
 
 
 				*/
-				if (x == 2 && y == 0) {
+                if (x == 1 && y == 0) {
+                    std::cout << "PASSWORD - PLAYER_BETABOT" << std::endl;
+                    game_save.selected_player = PLAYER_BETABOT;
+                } else if (x == 2 && y == 1) {
+                    std::cout << "PASSWORD - PLAYER_KITTYBOT" << std::endl;
+                    game_save.selected_player = PLAYER_KITTYBOT;
+                } else if (x == 0 && y == 2) {
+                    std::cout << "PASSWORD - INTRO_STAGE" << std::endl;
 					game_save.stages[INTRO_STAGE] = 1;
 					std::cout << "scenesLib::password_set - game_save.stages[INTRO_STAGE]: " << game_save.stages[INTRO_STAGE] << std::endl;
-				} else if (x == 0 && y == 2) {
+                } else if (x == 2 && y == 0) {
 					game_save.stages[MAGEBOT] = 1;
-				} else if (x == 1 && y == 4) {
+                } else if (x == 4 && y == 1) {
 					game_save.stages[DYNAMITEBOT] = 1;
-				} else if (x == 3 && y == 2) {
+                } else if (x == 2 && y == 3) {
 					game_save.stages[SEAHORSEBOT] = 1;
-				} else if (x == 5 && y == 3) {
+                } else if (x == 3 && y == 5) {
 					game_save.stages[APEBOT] = 1;
 				// energy tanks
 				/*
-				[4, 5]E6 = Start with 1
-				[4, 3]E4 = Start with 2
-				[1, 3]B4 = Start with 3
-				[0, 4]A5 = Start with 4
-				[2, 4]C5 = Start with 5
-				[3, 1]D2 = Start with 6
+                [5, 4]E6 = Start with 1
+                [3, 4]E4 = Start with 2
+                [3, 1]B4 = Start with 3
+                [4, 0]A5 = Start with 4
+                [4, 2]C5 = Start with 5
+                [1, 3]D2 = Start with 6
 				[2, 2]C3 = Start with 7
-                [5, 1]F2 = Start with 8
-				[0, 5]A6 = Start with 9
+                [1, 5]F2 = Start with 8
+                [5, 0]A6 = Start with 9
 				*/
-				} else if (x == 4 && y == 5) {
+                } else if (x == 5 && y == 4) {
 					game_save.items.energy_tanks = 1;
-				} else if (x == 4 && y == 3) {
+                } else if (x == 3 && y == 4) {
 					game_save.items.energy_tanks = 2;
-				} else if (x == 1 && y == 3) {
+                } else if (x == 3 && y == 1) {
 					game_save.items.energy_tanks = 3;
-				} else if (x == 0 && y == 4) {
+                } else if (x == 4 && y == 0) {
 					game_save.items.energy_tanks = 4;
-				} else if (x == 2 && y == 4) {
+                } else if (x == 4 && y == 3) {
 					game_save.items.energy_tanks = 5;
-				} else if (x == 3 && y == 1) {
+                } else if (x == 1 && y == 3) {
 					game_save.items.energy_tanks = 6;
 				} else if (x == 2 && y == 2) {
 					game_save.items.energy_tanks = 7;
-				} else if (x == 5 && y == 1) {
+                } else if (x == 1 && y == 5) {
 					game_save.items.energy_tanks = 8;
-				} else if (x == 0 && y == 5) {
+                } else if (x == 5 && y == 0) {
 					game_save.items.energy_tanks = 9;
-				// weapon tanks
-				// special tanks
-				} else {
-					std::cout << "password error at red[" << x << "][" << y << "]" << std::endl;
-					return false;
-				}
+                } else {
+                    std::cout << "password error at red[" << x << "][" << y << "]" << std::endl;
+                    return false;
+                }
 			}
 		}
 	}
-
-	/*
-
-	// ENERGY TANKS
-
-
-
-
-
-
-	*/
-
 	return true;
 }
 
@@ -981,26 +990,33 @@ bool scenesLib::password_end_selector()
 	graphLib.copyArea(st_rectangle(0, 0, _password_selector.gSurface->w/2, _password_selector.gSurface->h/2), end_pos1, &_password_selector, &graphLib.gameScreen);
 	graphLib.copyArea(st_rectangle( _password_selector.gSurface->w/2, 0, _password_selector.gSurface->w, _password_selector.gSurface->h/2), end_pos2, &_password_selector, &graphLib.gameScreen);
     draw_lib.update_screen();
-	while (true) {
-		input.clean();
-		input.readInput();
+    input.clean();
+    timer.delay(10);
+
+    while (true) {
+        input.readInput();
 		if (input.p1_input[BTN_UP] == 1) {
 			graphLib.copyArea(st_rectangle(0, _password_selector.gSurface->h/2, _password_selector.gSurface->w/2, _password_selector.gSurface->h), end_pos1, &_password_selector, &graphLib.gameScreen);
 			graphLib.copyArea(st_rectangle( _password_selector.gSurface->w/2, _password_selector.gSurface->h/2, _password_selector.gSurface->w, _password_selector.gSurface->h), end_pos2, &_password_selector, &graphLib.gameScreen);
-			password_ball_selector();
+            return password_ball_selector();
 		} else if (input.p1_input[BTN_ATTACK] == 1) {
+            std::cout << "password_end_selector::LEAVE#1 (GAVE UP)" << std::endl;
 			return false;
 		} else if (input.p1_input[BTN_JUMP] == 1 || input.p1_input[BTN_START] == 1) {
-
 			if (password_set() == false) { // show an error and keep trying
-
+                std::cout << "SENHA INVALIDA::LEAVE#2" << std::endl;
+                graphLib.clear_area(53, 180, 217, 28, 0, 0, 0);
+                graphLib.draw_text(66, 190, "INVALID PASSWORD.", graphLib.gameScreen);
+                draw_lib.update_screen();
 			} else {
+                std::cout << "password_end_selector::LEAVE#2 (PASSWORD OK)" << std::endl;
 				return true;
 			}
 		}
+        input.clean();
+        timer.delay(10);
         draw_lib.update_screen();
-		timer.delay(20);
-	}
+    }
 }
 
 
@@ -1023,10 +1039,9 @@ void scenesLib::password_number_selector(int ball_type)
 	graphLib.surfaceFromFile(filename, &ball_img);
 
 	input.clean();
-	input.waitTime(200);
+    timer.delay(10);
 
 	while (true) {
-		input.clean();
 		input.readInput();
 		if (input.p1_input[BTN_LEFT] == 1) {
 			graphLib.copyArea(st_rectangle(0, _password_selector.gSurface->h/2, _password_selector.gSurface->w, _password_selector.gSurface->h), st_position(selected_number.x*point_zero.w + point_zero.x, selected_number.y*point_zero.h + point_zero.y), &_password_selector, &graphLib.gameScreen);
@@ -1057,21 +1072,22 @@ void scenesLib::password_number_selector(int ball_type)
 			}
 			graphLib.copyArea(st_rectangle(0, 0, _password_selector.gSurface->w, _password_selector.gSurface->h/2), st_position(selected_number.x*point_zero.w + point_zero.x, selected_number.y*point_zero.h + point_zero.y), &_password_selector, &graphLib.gameScreen);
 		} else if (input.p1_input[BTN_JUMP] == 1) {
-			if (_password_selected_balls[selected_number.y][selected_number.x] == -1) {
+            if (_password_selected_balls[selected_number.x][selected_number.y] == -1) {
 				graphLib.copyArea(st_rectangle(0, 0, ball_img.gSurface->w, ball_img.gSurface->h), st_position(selected_number.x*point_zero.w + point_zero.x+2, selected_number.y*point_zero.h + point_zero.y+2), &ball_img, &graphLib.gameScreen);
-				_password_selected_balls[selected_number.y][selected_number.x] = ball_type;
+                _password_selected_balls[selected_number.x][selected_number.y] = ball_type;
 				std::cout << "set password[" << selected_number.y << "][" << selected_number.x << "] to " << ball_type << std::endl;
 			} else {
 				graphLib.blank_area(selected_number.x*point_zero.w + point_zero.x+2, selected_number.y*point_zero.h + point_zero.y+2, ball_img.gSurface->w, ball_img.gSurface->h, graphLib.gameScreen);
-				_password_selected_balls[selected_number.y][selected_number.x] = -1;
+                _password_selected_balls[selected_number.x][selected_number.y] = -1;
 			}
 		} else if (input.p1_input[BTN_ATTACK] == 1) {
 			graphLib.copyArea(st_rectangle(0, _password_selector.gSurface->h/2, _password_selector.gSurface->w, _password_selector.gSurface->h), st_position(selected_number.x*point_zero.w + point_zero.x, selected_number.y*point_zero.h + point_zero.y), &_password_selector, &graphLib.gameScreen);
 			break;
 		}
+        input.clean();
+        timer.delay(10);
         draw_lib.update_screen();
-		timer.delay(20);
-	}
+    }
 }
 
 
@@ -1079,6 +1095,7 @@ void scenesLib::password_number_selector(int ball_type)
 
 bool scenesLib::show_password_input()
 {
+    std::cout << ">> show_password_input::START << " << std::endl;
 	graphicsLib_gSurface password_screen;
 	std::string filename = FILEPATH + "data/images/backgrounds/password.png";
 	graphLib.surfaceFromFile(filename, &password_screen);
@@ -1089,9 +1106,12 @@ bool scenesLib::show_password_input()
 
     draw_lib.update_screen();
 
-    return password_end_selector();
+    bool res = password_end_selector();
+    std::cout << ">> show_password_input::END << " << std::endl;
+    return res;
 }
 
+/*
 void scenesLib::show_password()
 {
     graphicsLib_gSurface password_screen;
@@ -1109,6 +1129,22 @@ void scenesLib::show_password()
     graphLib.surfaceFromFile(filename, &blue_ball_img);
     filename = FILEPATH + "data/images/backgrounds/password_red_ball.png";
     graphLib.surfaceFromFile(filename, &red_ball_img);
+
+    if (game_save.selected_player == PLAYER_BETABOT) {
+        selected_number.x = 1;
+        selected_number.y = 0;
+        graphLib.copyArea(st_rectangle(0, 0, red_ball_img.gSurface->w, blue_ball_img.gSurface->h), st_position(selected_number.x*point_zero.w + point_zero.x+2, selected_number.y*point_zero.h + point_zero.y+2), &blue_ball_img, &graphLib.gameScreen);
+    }
+    if (game_save.selected_player == PLAYER_CANDYBOT) {
+        selected_number.x = 1;
+        selected_number.y = 0;
+        graphLib.copyArea(st_rectangle(0, 0, blue_ball_img.gSurface->w, blue_ball_img.gSurface->h), st_position(selected_number.x*point_zero.w + point_zero.x+2, selected_number.y*point_zero.h + point_zero.y+2), &blue_ball_img, &graphLib.gameScreen);
+    }
+    if (game_save.selected_player == PLAYER_KITTYBOT) {
+        selected_number.x = 2;
+        selected_number.y = 1;
+        graphLib.copyArea(st_rectangle(0, 0, red_ball_img.gSurface->w, blue_ball_img.gSurface->h), st_position(selected_number.x*point_zero.w + point_zero.x+2, selected_number.y*point_zero.h + point_zero.y+2), &blue_ball_img, &graphLib.gameScreen);
+    }
 
     if (game_save.stages[TECHNOBOT] == 1) {
         selected_number.x = 5;
@@ -1217,6 +1253,38 @@ void scenesLib::show_password()
         graphLib.copyArea(st_rectangle(0, 0, red_ball_img.gSurface->w, red_ball_img.gSurface->h), st_position(selected_number.x*point_zero.w + point_zero.x+2, selected_number.y*point_zero.h + point_zero.y+2), &red_ball_img, &graphLib.gameScreen);
     }
 
+    // weapon-tank: y 5, x 0
+    if (game_save.items.weapon_tanks == 1) {
+        selected_number.x = 5;
+        selected_number.y = 0;
+        graphLib.copyArea(st_rectangle(0, 0, blue_ball_img.gSurface->w, blue_ball_img.gSurface->h), st_position(selected_number.x*point_zero.w + point_zero.x+2, selected_number.y*point_zero.h + point_zero.y+2), &red_ball_img, &graphLib.gameScreen);
+    }
+
+    // special tank y 5, x 2
+    if (game_save.items.special_tanks == 1) {
+        selected_number.x = 5;
+        selected_number.y = 2;
+        graphLib.copyArea(st_rectangle(0, 0, blue_ball_img.gSurface->w, blue_ball_img.gSurface->h), st_position(selected_number.x*point_zero.w + point_zero.x+2, selected_number.y*point_zero.h + point_zero.y+2), &red_ball_img, &graphLib.gameScreen);
+    }
+    // usados, linha 4: 5, 3, 0
+    // linha4, coluna 1 -> armor, 2 -> hands, 4 -> legs
+    if (game_save.armor_pieces[ARMOR_BODY]) {
+        selected_number.x = 1;
+        selected_number.y = 4;
+        graphLib.copyArea(st_rectangle(0, 0, red_ball_img.gSurface->w, blue_ball_img.gSurface->h), st_position(selected_number.x*point_zero.w + point_zero.x+2, selected_number.y*point_zero.h + point_zero.y+2), &red_ball_img, &graphLib.gameScreen);
+    }
+    if (game_save.armor_pieces[ARMOR_ARMS]) {
+        selected_number.x = 2;
+        selected_number.y = 4;
+        graphLib.copyArea(st_rectangle(0, 0, red_ball_img.gSurface->w, blue_ball_img.gSurface->h), st_position(selected_number.x*point_zero.w + point_zero.x+2, selected_number.y*point_zero.h + point_zero.y+2), &red_ball_img, &graphLib.gameScreen);
+    }
+    if (game_save.armor_pieces[ARMOR_LEGS]) {
+        selected_number.x = 4;
+        selected_number.y = 4;
+        graphLib.copyArea(st_rectangle(0, 0, red_ball_img.gSurface->w, blue_ball_img.gSurface->h), st_position(selected_number.x*point_zero.w + point_zero.x+2, selected_number.y*point_zero.h + point_zero.y+2), &red_ball_img, &graphLib.gameScreen);
+    }
+
+
 
     graphLib.draw_text(112, 190, ">PRESS START", graphLib.gameScreen);
 
@@ -1226,6 +1294,41 @@ void scenesLib::show_password()
     input.wait_keypress();
     password_screen.freeGraphic();
 
+}
+*/
+
+void scenesLib::show_password()
+{
+    graphicsLib_gSurface password_screen;
+    std::string filename = FILEPATH + "data/images/backgrounds/password.png";
+    graphLib.surfaceFromFile(filename, &password_screen);
+    graphLib.copyArea(st_rectangle(0, 0, password_screen.gSurface->w, password_screen.gSurface->h), st_position(0, 0), &password_screen, &graphLib.gameScreen);
+
+    filename = FILEPATH + "data/images/backgrounds/password_selector.png";
+    graphLib.surfaceFromFile(filename, &_password_selector);
+    // add balls
+    graphicsLib_gSurface red_ball_img, blue_ball_img;
+    st_rectangle point_zero(60, 52, 16, 16);
+    filename = FILEPATH + "data/images/backgrounds/password_blue_ball.png";
+    graphLib.surfaceFromFile(filename, &blue_ball_img);
+    filename = FILEPATH + "data/images/backgrounds/password_red_ball.png";
+    graphLib.surfaceFromFile(filename, &red_ball_img);
+
+    password_generator pgen(game_save);
+    password_matrix res = pgen.run();
+    for (int i=0; i<PASSWORD_GRID_SIZE; i++) {
+        for (int j=0; j<PASSWORD_GRID_SIZE; j++) {
+            if (res.value[i][j] == PASSWORD_BALL_COLOR_RED) {
+                graphLib.copyArea(st_rectangle(0, 0, red_ball_img.gSurface->w, red_ball_img.gSurface->h), st_position(i*point_zero.w + point_zero.x+2, j*point_zero.h + point_zero.y+2), &red_ball_img, &graphLib.gameScreen);
+            } else if (res.value[i][j] == PASSWORD_BALL_COLOR_BLUE) {
+                graphLib.copyArea(st_rectangle(0, 0, blue_ball_img.gSurface->w, blue_ball_img.gSurface->h), st_position(i*point_zero.w + point_zero.x+2, j*point_zero.h + point_zero.y+2), &blue_ball_img, &graphLib.gameScreen);
+            }
+        }
+    }
+    graphLib.draw_text(112, 190, ">PRESS START", graphLib.gameScreen);
+    draw_lib.update_screen();
+    input.wait_keypress();
+    password_screen.freeGraphic();
 }
 
 void scenesLib::draw_lights_select_player(graphicsLib_gSurface& lights, int selected, int adjustX, int adjustY) {
@@ -1246,32 +1349,52 @@ void scenesLib::draw_lights_select_player(graphicsLib_gSurface& lights, int sele
 	} else {
 		posX = 0;
 	}
+    int XPos[4];
+    XPos[0] = 2;
+    XPos[1] = 88;
+    XPos[2] = 162;
+    XPos[3] = 248;
+    int YPos[4];
+    YPos[0] = 2;
+    YPos[1] = 88;
+    YPos[2] = 114;
+    YPos[3] = 200;
 
-	//printf(">>draw_lights_select_player - game_config.selected_player: %d, adjustX: %d, adjustY: %d\n", game_config.selected_player, adjustX, adjustY);
+    //std::cout << "draw_lights_select_player - selected: " << selected << std::endl;
 
-	if (selected == 2) {
-		// light for p1
-		graphLib.copyArea(st_rectangle(posX, 0, lights.height, lights.height), st_position(adjustX+2, adjustY+2), &lights, &graphLib.gameScreen);
-		graphLib.copyArea(st_rectangle(posX, 0, lights.height, lights.height), st_position(adjustX+2, adjustY+88), &lights, &graphLib.gameScreen);
-		graphLib.copyArea(st_rectangle(posX, 0, lights.height, lights.height), st_position(adjustX+248, adjustY+2), &lights, &graphLib.gameScreen);
-		graphLib.copyArea(st_rectangle(posX, 0, lights.height, lights.height), st_position(adjustX+248, adjustY+88), &lights, &graphLib.gameScreen);
-		// black for p2
-        graphLib.copyArea(st_rectangle(invPosX, 0, lights.height, lights.height), st_position(adjustX+2, adjustY+114), &lights, &graphLib.gameScreen);
-        graphLib.copyArea(st_rectangle(invPosX, 0, lights.height, lights.height), st_position(adjustX+2, adjustY+200), &lights, &graphLib.gameScreen);
-        graphLib.copyArea(st_rectangle(invPosX, 0, lights.height, lights.height), st_position(adjustX+248, adjustY+114), &lights, &graphLib.gameScreen);
-        graphLib.copyArea(st_rectangle(invPosX, 0, lights.height, lights.height), st_position(adjustX+248, adjustY+200), &lights, &graphLib.gameScreen);
-	} else {
-		// light for p2
-        graphLib.copyArea(st_rectangle(posX, 0, lights.height, lights.height), st_position(adjustX+2, adjustY+114), &lights, &graphLib.gameScreen);
-        graphLib.copyArea(st_rectangle(posX, 0, lights.height, lights.height), st_position(adjustX+2, adjustY+200), &lights, &graphLib.gameScreen);
-        graphLib.copyArea(st_rectangle(posX, 0, lights.height, lights.height), st_position(adjustX+248, adjustY+114), &lights, &graphLib.gameScreen);
-        graphLib.copyArea(st_rectangle(posX, 0, lights.height, lights.height), st_position(adjustX+248, adjustY+200), &lights, &graphLib.gameScreen);
-		// black for p1
-		graphLib.copyArea(st_rectangle(invPosX, 0, lights.height, lights.height), st_position(adjustX+2, adjustY+2), &lights, &graphLib.gameScreen);
-		graphLib.copyArea(st_rectangle(invPosX, 0, lights.height, lights.height), st_position(adjustX+2, adjustY+88), &lights, &graphLib.gameScreen);
-		graphLib.copyArea(st_rectangle(invPosX, 0, lights.height, lights.height), st_position(adjustX+248, adjustY+2), &lights, &graphLib.gameScreen);
-		graphLib.copyArea(st_rectangle(invPosX, 0, lights.height, lights.height), st_position(adjustX+248, adjustY+88), &lights, &graphLib.gameScreen);
-	}
+    // erase previous position
+    for (int i=0; i<2; i++) {
+        graphLib.copyArea(st_rectangle(invPosX, 0, lights.height, lights.height), st_position(adjustX+XPos[i], adjustY+YPos[0]), &lights, &graphLib.gameScreen);
+        graphLib.copyArea(st_rectangle(invPosX, 0, lights.height, lights.height), st_position(adjustX+XPos[i], adjustY+YPos[1]), &lights, &graphLib.gameScreen);
+        graphLib.copyArea(st_rectangle(invPosX, 0, lights.height, lights.height), st_position(adjustX+XPos[i+1], adjustY+YPos[0]), &lights, &graphLib.gameScreen);
+        graphLib.copyArea(st_rectangle(invPosX, 0, lights.height, lights.height), st_position(adjustX+XPos[i+1], adjustY+YPos[1]), &lights, &graphLib.gameScreen);
+        graphLib.copyArea(st_rectangle(invPosX, 0, lights.height, lights.height), st_position(adjustX+XPos[i], adjustY+YPos[2]), &lights, &graphLib.gameScreen);
+        graphLib.copyArea(st_rectangle(invPosX, 0, lights.height, lights.height), st_position(adjustX+XPos[i], adjustY+YPos[3]), &lights, &graphLib.gameScreen);
+        graphLib.copyArea(st_rectangle(invPosX, 0, lights.height, lights.height), st_position(adjustX+XPos[i+1], adjustY+YPos[2]), &lights, &graphLib.gameScreen);
+        graphLib.copyArea(st_rectangle(invPosX, 0, lights.height, lights.height), st_position(adjustX+XPos[i+1], adjustY+YPos[3]), &lights, &graphLib.gameScreen);
+    }
+
+    if (selected == PLAYER_ROCKBOT) {
+        graphLib.copyArea(st_rectangle(posX, 0, lights.height, lights.height), st_position(adjustX+XPos[0], adjustY+YPos[0]), &lights, &graphLib.gameScreen);
+        graphLib.copyArea(st_rectangle(posX, 0, lights.height, lights.height), st_position(adjustX+XPos[0], adjustY+YPos[1]), &lights, &graphLib.gameScreen);
+        graphLib.copyArea(st_rectangle(posX, 0, lights.height, lights.height), st_position(adjustX+XPos[1], adjustY+YPos[0]), &lights, &graphLib.gameScreen);
+        graphLib.copyArea(st_rectangle(posX, 0, lights.height, lights.height), st_position(adjustX+XPos[1], adjustY+YPos[1]), &lights, &graphLib.gameScreen);
+    } else if (selected == PLAYER_BETABOT) {
+        graphLib.copyArea(st_rectangle(posX, 0, lights.height, lights.height), st_position(adjustX+XPos[2], adjustY+YPos[0]), &lights, &graphLib.gameScreen);
+        graphLib.copyArea(st_rectangle(posX, 0, lights.height, lights.height), st_position(adjustX+XPos[2], adjustY+YPos[1]), &lights, &graphLib.gameScreen);
+        graphLib.copyArea(st_rectangle(posX, 0, lights.height, lights.height), st_position(adjustX+XPos[3], adjustY+YPos[0]), &lights, &graphLib.gameScreen);
+        graphLib.copyArea(st_rectangle(posX, 0, lights.height, lights.height), st_position(adjustX+XPos[3], adjustY+YPos[1]), &lights, &graphLib.gameScreen);
+    } else if (selected == PLAYER_CANDYBOT) {
+        graphLib.copyArea(st_rectangle(posX, 0, lights.height, lights.height), st_position(adjustX+XPos[0], adjustY+YPos[2]), &lights, &graphLib.gameScreen);
+        graphLib.copyArea(st_rectangle(posX, 0, lights.height, lights.height), st_position(adjustX+XPos[0], adjustY+YPos[3]), &lights, &graphLib.gameScreen);
+        graphLib.copyArea(st_rectangle(posX, 0, lights.height, lights.height), st_position(adjustX+XPos[1], adjustY+YPos[2]), &lights, &graphLib.gameScreen);
+        graphLib.copyArea(st_rectangle(posX, 0, lights.height, lights.height), st_position(adjustX+XPos[1], adjustY+YPos[3]), &lights, &graphLib.gameScreen);
+    } else if (selected == PLAYER_KITTYBOT) {
+        graphLib.copyArea(st_rectangle(posX, 0, lights.height, lights.height), st_position(adjustX+XPos[2], adjustY+YPos[2]), &lights, &graphLib.gameScreen);
+        graphLib.copyArea(st_rectangle(posX, 0, lights.height, lights.height), st_position(adjustX+XPos[2], adjustY+YPos[3]), &lights, &graphLib.gameScreen);
+        graphLib.copyArea(st_rectangle(posX, 0, lights.height, lights.height), st_position(adjustX+XPos[3], adjustY+YPos[2]), &lights, &graphLib.gameScreen);
+        graphLib.copyArea(st_rectangle(posX, 0, lights.height, lights.height), st_position(adjustX+XPos[3], adjustY+YPos[3]), &lights, &graphLib.gameScreen);
+    }
     draw_lib.update_screen();
 }
 
@@ -1279,43 +1402,51 @@ void scenesLib::draw_lights_select_player(graphicsLib_gSurface& lights, int sele
 
 
 
-unsigned short int scenesLib::select_player() {
+Uint8 scenesLib::select_player() {
 	int adjustX, adjustY;
-	int selected = 2;
+    int selected = 1;
 
 	graphLib.blank_screen();
-    adjustX = (RES_W-256)*0.5;
-    adjustY = (RES_H-208)*0.5;
+
+    if (game_config.game_finished == true) {
+        adjustX = (RES_W-256)*0.5;
+        adjustY = (RES_H-208)*0.5;
+    } else {
+        adjustX = (RES_W-256)*0.5;
+        adjustY = 74;
+    }
 
     graphLib.copyArea(st_position(0, 0), &INTRO_SURFACES[INTRO_SURFACES_PLAYER_SELECT_BG], &graphLib.gameScreen);
     draw_lib.update_screen();
 
 	input.clean();
 	input.waitTime(200);
+    int x = 0;
+    int y = 0;
+
+
     while (true) {
 		input.readInput();
-        if (input.p1_input[BTN_DOWN] == 1 || input.p1_input[BTN_UP] == 1) {
+        if (game_config.game_finished == true && (input.p1_input[BTN_DOWN] == 1 || input.p1_input[BTN_UP] == 1)) {
             soundManager.play_sfx(SFX_CURSOR);
-            if (selected == 2) {
-                selected = 1;
-            } else {
-                selected = 2;
-            }
+            y = !y;
+        } else if (input.p1_input[BTN_LEFT] == 1 || input.p1_input[BTN_RIGHT] == 1) {
+            x = !x;
         } else if (input.p1_input[BTN_QUIT] == 1 || input.p2_input[BTN_QUIT] == 1) {
-#if !defined(PLAYSTATION2) && !defined(PSP) && !defined(WII) && !defined(DREAMCAST)
-            graphLib.show_debug_msg("LEAVE #6");
             gameControl.leave_game();
-#endif
         } else if (input.p1_input[BTN_START] == 1 || input.p2_input[BTN_START] == 1) {
             input.clean();
             draw_lib.update_screen();
             timer.delay(80);
             break;
         }
+        // convert x/y into selected
+        selected = x + y*2;
+
 		draw_lights_select_player(INTRO_SURFACES[INTRO_SURFACES_PLAYER_SELECT_LIGHTS], selected, adjustX, adjustY);
         input.clean();
+        timer.delay(10);
         draw_lib.update_screen();
-        timer.delay(80);
 	}
     //printf(">> select_player.END, n: %d\n", selected);
 	return selected;

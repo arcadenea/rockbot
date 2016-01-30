@@ -36,7 +36,7 @@ void player_preview_area::paintEvent(QPaintEvent *) {
 	//printf("DEBUG.npcPreviewArea::paintEvent - filename: %s\n", dataExchanger->addNpcFilename);
 	QString filename = QString(FILEPATH.c_str()) + QString("data/images/sprites/") + QString(dataExchanger->player_graphics_data.graphics_filename.c_str());
 	QImage image(filename);
-	if (image.isNull()) {
+    if (image.isNull() == true || image.width() <= 0) {
 		return;
 	}
 	image = image.scaled(image.width()*2, image.height()*2+1);
@@ -72,17 +72,25 @@ void player_preview_area::paintEvent(QPaintEvent *) {
 	//printf("npcPreviewArea::paintEvent - gSize: %d\n", dataExchanger->npcGraphicSize_w);
 
    painter.setPen(QColor(0, 120, 0));
-   for (i=0; i<=this->width(); i=i+dataExchanger->player_graphics_data.frame_size.width*2) {
-	  // linhas verticais
-      line = QLineF(i, 0, i, this->height());
-      painter.drawLine(line);
+   int inc = dataExchanger->player_graphics_data.frame_size.width*2;
+   //std::cout << "PLAYYERPREVIEWAREA::PAINTEVENT - inc: " << inc << ", limit: " << this->width() << std::endl;
+   if (inc > 0) {
+       for (i=0; i<=this->width(); i=i+inc) {
+          //std::cout << "PLAYYERPREVIEWAREA::PAINTEVENT - LOOP #1 - inc: " << inc << ", limit: " << this->width() << std::endl;
+          // linhas verticais
+          line = QLineF(i, 0, i, this->height());
+          painter.drawLine(line);
+       }
    }
-   for (i=0; i<this->height(); i=i+dataExchanger->player_graphics_data.frame_size.height*2) {
-	  // linhas horizontais
-      line = QLineF(0, i, this->width(), i);
-      painter.drawLine(line);
-   }
-
+   inc = dataExchanger->player_graphics_data.frame_size.height*2;
+   if (inc > 0) {
+       for (i=0; i<this->height(); i=i+inc) {
+          // linhas horizontais
+          //std::cout << "PLAYYERPREVIEWAREA::PAINTEVENT - LOOP #2" << std::endl;
+          line = QLineF(0, i, this->width(), i);
+          painter.drawLine(line);
+       }
+    }
 }
 
 void player_preview_area::change_player(int player_n)

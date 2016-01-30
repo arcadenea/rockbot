@@ -59,6 +59,8 @@ protected:
   int editor_selectedTileX, editor_selectedTileY;
   int tempX, tempY;
   EditorTilePallete *my_pallete;
+  int editor_selected_object_pos;
+  int editor_selected_object_pos_map;
   void fill_area();
 
   int map_backup_n;

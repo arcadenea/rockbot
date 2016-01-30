@@ -23,7 +23,7 @@ class object
 {
 public:
 	//object(int id, struct format_v_2_1::file_object temp_obj); // game object constructor
-	object(int _id, classMap *set_map, st_position map_pos); // map object constructor
+    object(int _id, classMap *set_map, st_position map_pos, st_position teleporter_dest, int map_dest); // map object constructor
     ~object();
     /**
      * @brief
@@ -34,12 +34,21 @@ public:
      * @brief
      *
      */
-    void show();
+    void show(int adjust_y=0, int adjust_x=0);
+
+
+    void show_vertical_ray(int adjust_y=0);
+    void show_horizontal_ray(int adjust_y=0);
+    void show_track_platform(int adjust_y=0);
+
+    void show_deathray_vertical(int adjust_y=0);
+    void show_deathray_horizontal(int adjust_y=0);
+
     /**
      * @brief
      *
      */
-    void move();
+    void move(bool paused);
 
     void reset_animation();
 
@@ -49,7 +58,7 @@ public:
      * @brief
      *
      */
-    void execute();
+    void execute(bool paused);
 
 
     /**
@@ -58,6 +67,10 @@ public:
      * @return st_position
      */
     st_position get_position() const;
+
+
+    st_rectangle get_area();
+
     /**
      * @brief
      *
@@ -190,12 +203,9 @@ public:
      */
     bool is_on_screen();
 
+    bool is_on_visible_screen();
 
-    /**
-     * @brief
-     *
-     * @param colision_mode
-     */
+
     void set_colision_mode(enum colision_modes colision_mode); // if player uses this as platform, move him
 
     enum colision_modes get_colision_mode() const;
@@ -209,8 +219,16 @@ public:
 
     void set_precise_position(st_position pos, int direction);                                // used to get a fine-tuning positioning instead of map-position
 
-
     void remove_graphic();
+
+    st_position get_boss_teleporter_dest();
+
+    int get_boss_teleport_map_dest();
+
+    int get_obj_map_id();
+
+    void set_obj_map_id(int id);
+
 
 private:
     /**
@@ -274,6 +292,11 @@ private:
     bool _must_play_appearing_sfx;                                              // used by disappearing blocks to play the sfx just once
     bool _must_teleport_in;                                                     // if set, the object will teleport in when added and out when finished
     int _teleport_state;                                                        // used to control when start/finish the teleport
+    st_position _boss_teleporter_dest;
+    int _boss_teleporter_map_dest;
+    int _obj_map_id;                                                            // used for map-objects, so we can get them in stage_data.objects[N]
+    bool _expanding;
+    int _size;
 };
 
 #endif // OBJECT_H

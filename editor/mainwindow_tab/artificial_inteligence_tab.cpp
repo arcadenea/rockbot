@@ -89,7 +89,7 @@ void artificial_inteligence_tab::on_ai_selector_currentIndexChanged(int index)
     common::fill_ai_options_combo(game_data.game_npcs[index].sprites[ANIM_TYPE_TELEPORT][3].colision_rect.x, ui->dead_extra_parameter);
 
 	ui->parameter1->setCurrentIndex(game_data.ai_types[index].states[0].extra_parameter);
-    std::cout << "#0 - AI[" << index << "].states[1].extra_parameter: " << game_data.ai_types[dataExchanger->current_ai].states[1].extra_parameter << std::endl;
+    //std::cout << "#0 - AI[" << index << "].states[1].extra_parameter: " << game_data.ai_types[dataExchanger->current_ai].states[1].extra_parameter << std::endl;
 	ui->parameter2->setCurrentIndex(game_data.ai_types[index].states[1].extra_parameter);
 	ui->parameter3->setCurrentIndex(game_data.ai_types[index].states[2].extra_parameter);
 	ui->parameter4->setCurrentIndex(game_data.ai_types[index].states[3].extra_parameter);
@@ -336,13 +336,13 @@ void artificial_inteligence_tab::on_parameter1_currentIndexChanged(int index)
 
 void artificial_inteligence_tab::on_parameter2_currentIndexChanged(int index)
 {
-    std::cout << "AI::on_parameter2_currentIndexChanged - _filling_data: " << _filling_data << std::endl;
+    //std::cout << "AI::on_parameter2_currentIndexChanged - _filling_data: " << _filling_data << std::endl;
 	if (_filling_data == true) {
 		return;
 	}
-    std::cout << "#1 - AI[" << dataExchanger->current_ai << "].states[1].extra_parameter: " << game_data.ai_types[dataExchanger->current_ai].states[1].extra_parameter << std::endl;
+    //std::cout << "#1 - AI[" << dataExchanger->current_ai << "].states[1].extra_parameter: " << game_data.ai_types[dataExchanger->current_ai].states[1].extra_parameter << std::endl;
     game_data.ai_types[dataExchanger->current_ai].states[1].extra_parameter = index;
-    std::cout << "#2 - AI[" << dataExchanger->current_ai << "].states[1].extra_parameter: " << game_data.ai_types[dataExchanger->current_ai].states[1].extra_parameter << std::endl;
+    //std::cout << "#2 - AI[" << dataExchanger->current_ai << "].states[1].extra_parameter: " << game_data.ai_types[dataExchanger->current_ai].states[1].extra_parameter << std::endl;
 
 }
 
@@ -551,6 +551,7 @@ void artificial_inteligence_tab::fill_next_combos()
 
 void artificial_inteligence_tab::fill_next_combo(QComboBox *combo)
 {
+    /*
     std::vector<std::string> list = {
         std::string("CHANCE"),
         std::string("#1"),
@@ -562,6 +563,17 @@ void artificial_inteligence_tab::fill_next_combo(QComboBox *combo)
         std::string("#7"),
         std::string("#8")
     };
+    */
+    std::vector<std::string> list;
+    list.push_back("CHANCE");
+    list.push_back("#1");
+    list.push_back("#2");
+    list.push_back("#3");
+    list.push_back("#4");
+    list.push_back("#5");
+    list.push_back("#6");
+    list.push_back("#7");
+    list.push_back("#8");
     for (int i=0; i<list.size(); i++) {
         std::string temp = list[i];
         QString temp_str = QString("[") + QString::number(i) + QString("] - ") + QString(temp.c_str());

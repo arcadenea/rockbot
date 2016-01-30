@@ -1,12 +1,16 @@
 TARGET = rockbot
-OBJS   = main.o options/key_map.o inputlib.o timerlib.o soundlib.o file/file_io.o colision_detection.o graphicslib.o class_colorcycle.o sceneslib.o graphic/option_picker.o classmap.o objects/object.o character/character.o projectilelib.o graphic/animation.o stage.o stage_select.o class_config.o scenes/dialogs.o scenes/ending.o game.o character/classplayer.o character/classnpc.o character/artificial_inteligence.o character/classboss.o aux_tools/trajectory_parabola.o file/convert.o graphic/draw.o
+OBJS   = main.o options/key_map.o inputlib.o timerlib.o soundlib.o file/file_io.o colision_detection.o graphicslib.o class_colorcycle.o \
+sceneslib.o stage_select.o graphic/option_picker.o classmap.o objects/object.o character/character.o projectilelib.o \
+graphic/animation.o stage.o class_config.o scenes/dialogs.o scenes/ending.o game.o character/classplayer.o \
+character/classnpc.o character/artificial_inteligence.o character/classboss.o aux_tools/trajectory_parabola.o file/convert.o \
+graphic/draw.o character/movement/jump.o character/movement/inertia.o scenes/password_generator.o
  
 all: rm-elf $(TARGET).elf
 
 INCLUDES = -I$(KOS_BASE)/../kosports/include/SDL1213 -I.
 
-CFLAGS += -O3 -fno-function-cse -funit-at-a-time -fno-delete-null-pointer-checks -funroll-loops -fomit-frame-pointer -fno-ident  -finline-functions -freorder-blocks -funsigned-char -funroll-all-loops -frerun-loop-opt -falign-loops -fstrict-aliasing -ml -m4-single-only
-CFLAGS += -DDREAMCAST $(INCLUDES) -DDREAMCAST 
+CFLAGS += -DDREAMCAST -flto -Os -ml -m4-single-only $(INCLUDES)
+#CFLAGS += -DDREAMCAST $(INCLUDES) 
 
 include $(KOS_BASE)/Makefile.rules
 

@@ -4,7 +4,7 @@
 #include <vector>
 #include <map>
 #include "defines.h"
-#include "st_common.h"
+#include "file/format/st_common.h"
 
 #include "file/file_io.h"
 
@@ -118,7 +118,7 @@ public:
      */
     void set_color_key_number(unsigned int map_key, int color_number);
 
-    void add_stage_colorcycle(short stage_n, format_v2_0::file_colorcycle& colorcycle);
+    void add_stage_colorcycle(short stage_n, CURRENT_FILE_FORMAT::file_colorcycle& colorcycle);
 
 private:
     /**

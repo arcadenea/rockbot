@@ -12,6 +12,7 @@ player_edit::player_edit(QWidget *parent) :
 {
     ui->setupUi(this);
     dataExchanger->current_player = 0;
+    common::fill_players_combo(ui->players_tab_list_combo_2);
     fill_players_data();
 }
 
@@ -30,14 +31,15 @@ void player_edit::fill_players_data()
     ui->players_tab_hp->setValue(game_data.players[index].HP);
     ui->players_tab_hasshield->setChecked(game_data.players[index].have_shield);
     ui->players_tab_maxshots->setValue(game_data.players[index].max_shots);
-    ui->players_tab_fallgravity->setValue(game_data.players[index].touch_damage_reduction);
-    ui->players_tab_jumpgravity->setValue(game_data.players[index].jump_gravity);
-    ui->players_tab_jumpspeed->setValue(game_data.players[index].jump_initial_speed);
+    ui->damageModSpinBox->setValue(game_data.players[index].damage_modifier);
     double move_speed = game_data.players[index].move_speed;
     move_speed = move_speed / 10;
-    std::cout << "move_speed: " << move_speed << std::endl;
-    ui->players_tab_movespeed->setValue(move_speed);
+    //std::cout << "move_speed: " << move_speed << std::endl;
     ui->player_graphics_combo->setCurrentIndex(ui->player_graphics_combo->findText(QString(game_data.players[index].graphic_filename)));
+
+    common::fill_graphicfiles_combobox("/data/images/faces/", ui->playerFace_comboBox);
+    ui->playerFace_comboBox->setCurrentIndex(ui->playerFace_comboBox->findText(QString(game_data.players[index].face_filename)));
+
     ui->player_sprite_w->setValue(game_data.players[index].sprite_size.width);
     ui->player_sprite_h->setValue(game_data.players[index].sprite_size.height);
 
@@ -48,7 +50,7 @@ void player_edit::fill_players_data()
     ui->can_slide_checkbox->setChecked(game_data.players[index].can_slide);
 
     common::fill_projectiles_combo(ui->chargedshot_combo);
-    ui->chargedshot_combo->setCurrentIndex(game_data.players[index].full_charged_projectile_id);
+    ui->chargedshot_combo->setCurrentIndex(game_data.players[index].full_charged_projectile_id+1);
     ui->ColorKeyIndicator1->setStyleSheet(QString("background-color: rgb(") + QString::number(game_data.players[dataExchanger->current_player].color_keys[0].r) + QString(", ") +  QString::number(game_data.players[dataExchanger->current_player].color_keys[0].g) + QString(", ") +  QString::number(game_data.players[dataExchanger->current_player].color_keys[0].b) + QString("); border-style: outset; border-width: 1px; border-color: black;"));
     ui->ColorKeyIndicator2->setStyleSheet(QString("background-color: rgb(") + QString::number(game_data.players[dataExchanger->current_player].color_keys[1].r) + QString(", ") +  QString::number(game_data.players[dataExchanger->current_player].color_keys[1].g) + QString(", ") +  QString::number(game_data.players[dataExchanger->current_player].color_keys[1].b) + QString("); border-style: outset; border-width: 1px; border-color: black;"));
     ui->ColorKeyIndicator3->setStyleSheet(QString("background-color: rgb(") + QString::number(game_data.players[dataExchanger->current_player].color_keys[2].r) + QString(", ") +  QString::number(game_data.players[dataExchanger->current_player].color_keys[2].g) + QString(", ") +  QString::number(game_data.players[dataExchanger->current_player].color_keys[2].b) + QString("); border-style: outset; border-width: 1px; border-color: black;"));
@@ -56,6 +58,10 @@ void player_edit::fill_players_data()
     ui->ColorValueIndicator1->setStyleSheet(QString("background-color: rgb(") + QString::number(game_data.players[dataExchanger->current_player].weapon_colors[dataExchanger->current_weapon].color1.r) + QString(", ") +  QString::number(game_data.players[dataExchanger->current_player].weapon_colors[dataExchanger->current_weapon].color1.g) + QString(", ") +  QString::number(game_data.players[dataExchanger->current_player].weapon_colors[dataExchanger->current_weapon].color1.b) + QString("); border-style: outset; border-width: 1px; border-color: black;"));
     ui->ColorValueIndicator2->setStyleSheet(QString("background-color: rgb(") + QString::number(game_data.players[dataExchanger->current_player].weapon_colors[dataExchanger->current_weapon].color2.r) + QString(", ") +  QString::number(game_data.players[dataExchanger->current_player].weapon_colors[dataExchanger->current_weapon].color2.g) + QString(", ") +  QString::number(game_data.players[dataExchanger->current_player].weapon_colors[dataExchanger->current_weapon].color2.b) + QString("); border-style: outset; border-width: 1px; border-color: black;"));
     ui->ColorValueIndicator3->setStyleSheet(QString("background-color: rgb(") + QString::number(game_data.players[dataExchanger->current_player].weapon_colors[dataExchanger->current_weapon].color3.r) + QString(", ") +  QString::number(game_data.players[dataExchanger->current_player].weapon_colors[dataExchanger->current_weapon].color3.g) + QString(", ") +  QString::number(game_data.players[dataExchanger->current_player].weapon_colors[dataExchanger->current_weapon].color3.b) + QString("); border-style: outset; border-width: 1px; border-color: black;"));
+
+    ui->canDoubleJumpCheckBox->setChecked(game_data.players[dataExchanger->current_player].can_double_jump);
+    ui->CanAirDashCheckBox->setChecked(game_data.players[dataExchanger->current_player].can_air_dash);
+    ui->canShotDiagonal->setChecked(game_data.players[dataExchanger->current_player].can_shot_diagonal);
 
     common::fill_weapons_combo_plus(ui->weaponlist_combo);
     _loading = false;
@@ -165,25 +171,6 @@ void player_edit::on_players_tab_maxshots_valueChanged(int arg1)
     game_data.players[dataExchanger->current_player].max_shots = arg1;
 }
 
-void player_edit::on_players_tab_fallgravity_valueChanged(double arg1)
-{
-    if (_loading == true) { return; }
-    game_data.players[dataExchanger->current_player].touch_damage_reduction = arg1;
-}
-
-void player_edit::on_players_tab_jumpgravity_valueChanged(double arg1)
-{
-    if (_loading == true) { return; }
-    game_data.players[dataExchanger->current_player].jump_gravity = arg1;
-}
-
-void player_edit::on_players_tab_jumpspeed_valueChanged(double arg1)
-{
-    if (_loading == true) { return; }
-    game_data.players[dataExchanger->current_player].jump_initial_speed = arg1;
-}
-
-
 void player_edit::on_can_slide_checkbox_toggled(bool checked)
 {
     if (_loading == true) { return; }
@@ -201,6 +188,7 @@ void player_edit::on_players_tab_list_combo_2_currentIndexChanged(int index)
 void player_edit::on_player_graphics_combo_currentIndexChanged(const QString &arg1)
 {
     dataExchanger->player_graphics_data.graphics_filename = arg1.toStdString();
+
     ui->player_preview_widget->repaint();
     if (_loading == false) {
         sprintf(game_data.players[dataExchanger->current_player].graphic_filename, "%s", arg1.toStdString().c_str());
@@ -306,7 +294,7 @@ void player_edit::on_color3_picker_clicked()
 void player_edit::on_chargedshot_combo_currentIndexChanged(int index)
 {
     if (_loading == true) { return; }
-    game_data.players[dataExchanger->current_player].full_charged_projectile_id = index;
+    game_data.players[dataExchanger->current_player].full_charged_projectile_id = index-1;
 }
 
 void player_edit::on_weaponlist_combo_currentIndexChanged(int index)
@@ -322,4 +310,35 @@ void player_edit::on_players_tab_movespeed_valueChanged(double arg1)
 {
     if (_loading == true) { return; }
     game_data.players[dataExchanger->current_player].move_speed = arg1 * 10;
+}
+
+void player_edit::on_damageModSpinBox_valueChanged(int arg1)
+{
+    if (_loading == true) { return; }
+    game_data.players[dataExchanger->current_player].damage_modifier = arg1;
+}
+
+void player_edit::on_canDoubleJumpCheckBox_toggled(bool checked)
+{
+    if (_loading == true) { return; }
+    game_data.players[dataExchanger->current_player].can_double_jump = checked;
+}
+
+void player_edit::on_CanAirDashCheckBox_toggled(bool checked)
+{
+    if (_loading == true) { return; }
+     game_data.players[dataExchanger->current_player].can_air_dash = checked;
+}
+
+void player_edit::on_canShotDiagonal_toggled(bool checked)
+{
+    if (_loading == true) { return; }
+    game_data.players[dataExchanger->current_player].can_shot_diagonal = checked;
+}
+
+
+void player_edit::on_playerFace_comboBox_currentIndexChanged(const QString &arg1)
+{
+    if (_loading == true) { return; }
+    sprintf(game_data.players[dataExchanger->current_player].face_filename, "%s", arg1.toStdString().c_str());
 }

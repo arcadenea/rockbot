@@ -14,7 +14,7 @@
 #include <SDL/SDL_endian.h>
 
 #include "defines.h"
-#include "st_common.h"
+#include "file/format/st_common.h"
 #include "class_colorcycle.h"
 #include "file/format.h"
 
@@ -83,11 +83,10 @@ public:
      * @param st_position
      * @param st_position
      * @param
-     * @param use_beaten
      */
-    void placeTile(struct st_position, struct st_position, struct graphicsLib_gSurface*, short use_beaten);
+    void placeTile(struct st_position, struct st_position, struct graphicsLib_gSurface*);
 
-    void place_3rd_level_tile(int origin_x, int origin_y, int dest_x, int dest_y, short use_beaten);
+    void place_3rd_level_tile(int origin_x, int origin_y, int dest_x, int dest_y);
 
 
     /**
@@ -330,7 +329,7 @@ public:
      * @param current_hp
      * @param player_frame
      */
-    void draw_weapon_menu_bg(unsigned short int current_hp, graphicsLib_gSurface *player_frame);
+    void draw_weapon_menu_bg(Uint8 current_hp, graphicsLib_gSurface *player_frame);
 
     /**
      * @brief
@@ -583,9 +582,12 @@ public:
 
     void preload_stage_colorcycle();
 
-    void add_stage_colorcycle(short stage_n, format_v2_0::file_colorcycle &colorcycle);
+    void add_stage_colorcycle(short stage_n, CURRENT_FILE_FORMAT::file_colorcycle &colorcycle);
 
     void update_colors();
+
+    void update_surface_colormap(graphicsLib_gSurface *display_surface);
+
 
 
 private:
@@ -686,6 +688,9 @@ private:
      */
     void preload_images();
 
+    void update_surface_colormap(SDL_Surface *display_surface, SDL_Color set_colormap[COLOR_COUNT]);
+
+
 
 
 public:
@@ -698,7 +703,7 @@ public:
 
 	// graphics used in several places
     graphicsLib_gSurface small_explosion; /**< TODO */
-    graphicsLib_gSurface projectile_surface[MAX_FILE_PROJECTILES]; /**< TODO */
+    graphicsLib_gSurface projectile_surface[FS_MAX_PROJECTILES]; /**< TODO */
     graphicsLib_gSurface bomb_explosion_surface; /**< TODO */
     graphicsLib_gSurface e_tank[2]; /**< TODO */
     graphicsLib_gSurface w_tank[2]; /**< TODO */
@@ -711,9 +716,13 @@ public:
     graphicsLib_gSurface hit; /**< TODO */
     graphicsLib_gSurface water_splash; /**< TODO */
 
+    graphicsLib_gSurface armor_icon_arms;
+    graphicsLib_gSurface armor_icon_body;
+    graphicsLib_gSurface armor_icon_legs;
+
 
 private:
-    #define COLOR_COUNT 68
+
     SDL_Color colormap[COLOR_COUNT]; /**< TODO */
     SDL_Color colormap_original[COLOR_COUNT]; /**< TODO */
     SDL_Color colormap_white[COLOR_COUNT]; /**< TODO */
@@ -726,7 +735,6 @@ private:
     SDL_Surface *game_screen;									// we do not put this into a graphicsLib_gSurface because this is meant to be used only internally /**< TODO */
     SDL_Surface *game_screen_scaled; /**< TODO */
     SDL_Surface *tileset;										// we do not put this into a graphicsLib_gSurface because this is meant to be used only internally /**< TODO */
-    SDL_Surface *tileset_beaten;										// we do not put this into a graphicsLib_gSurface because this is meant to be used only internally /**< TODO */
     std::vector<struct graphicsLib_gSurface> faces;				// faces for players and npcs /**< TODO */
     std::vector<struct graphicsLib_gSurface> weapon_icons;		// weapon icons, used in menu and energy bars /**< TODO */
     std::vector<struct graphicsLib_gSurface> small_weapon_icons;		// weapon icons, used in menu and energy bars /**< TODO */
@@ -747,8 +755,6 @@ private:
     SDL_PixelFormat screen_pixel_format; /**< TODO */
 
     bool _show_stars; /**< TODO */
-
-    SDL_mutex *_screen_lock; /**< TODO */
 
     unsigned int _explosion_animation_timer; /**< TODO */
     int _explosion_animation_pos; /**< TODO */

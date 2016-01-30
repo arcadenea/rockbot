@@ -1,6 +1,10 @@
+#include <stdio.h>
+#include <stdlib.h>
 #include "draw.h"
 
 #define RAIN_DELAY 160
+#define FLASH_DELAY 260
+#define FLASH_IMG_SIZE 8
 
 extern graphicsLib graphLib;
 
@@ -16,8 +20,13 @@ extern game gameControl;
 extern inputLib input;
 
 
-draw::draw() : _rain_pos(0), _rain_timer(0), _rain_enabled(false)
+draw::draw() : _rain_pos(0), _rain_timer(0), _rain_enabled(false), _flash_pos(0), _flash_timer(0), _flash_enabled(false)
 {
+    for (int i=0; i<FLASH_POINTS_N; i++) {
+        flash_points[i].x = rand() % RES_W;
+        flash_points[i].y = rand() % RES_H;
+    }
+
 }
 
 void draw::preload()
@@ -44,6 +53,9 @@ void draw::update_screen()
     if (_rain_enabled == true) {
         show_rain();
     }
+    if (_flash_enabled == true) {
+        show_flash();
+    }
     graphLib.updateScreen();
 }
 
@@ -56,6 +68,14 @@ void draw::set_rain_enabled(bool enabled)
 {
     _rain_enabled = enabled;
 }
+
+void draw::set_flash_enabled(bool enabled)
+{
+    //std::cout << "set_flash_enabled - " << enabled << std::endl;
+    _flash_enabled = enabled;
+}
+
+
 
 void draw::show_rain()
 {
@@ -75,6 +95,25 @@ void draw::show_rain()
             _rain_pos = 0;
         }
         _rain_timer = timer.getTimer() + RAIN_DELAY;
+    }
+}
+
+void draw::show_flash()
+{
+    if (flash_obj.gSurface == NULL) {
+        // load rain
+        std::string filename = FILEPATH + "/data/images/tilesets/flash.png";
+        graphLib.surfaceFromFile(filename, &flash_obj);
+    }
+    for (int i=0; i<FLASH_POINTS_N; i++) {
+        graphLib.showSurfaceRegionAt(&flash_obj, st_rectangle(_flash_pos*FLASH_IMG_SIZE, 0, FLASH_IMG_SIZE, FLASH_IMG_SIZE), st_position(flash_points[i].x, flash_points[i].y));
+    }
+    if (timer.getTimer() > _flash_timer) {
+        _flash_pos++;
+        if (_flash_pos > 2) {
+            _flash_pos = 0;
+        }
+        _flash_timer = timer.getTimer() + FLASH_DELAY;
     }
 }
 
@@ -240,27 +279,34 @@ void draw::create_credits_text(graphicsLib_gSurface &surface)
 
     credits_list.push_back("--- CHARACTER DESIGN ---");
     credits_list.push_back("IURI FIEDORUK");
-    credits_list.push_back("ARIS KSF");
+    credits_list.push_back("ARISMEIRE KUMMER SILVA FIEDORUK");
+    credits_list.push_back("FABIANO \"CHIKAGO\" SACCOL");
+    credits_list.push_back("GIULIANO \"KOBOLD\" SACCOL");
+    credits_list.push_back("IVAN FIEDORUK");
     credits_list.push_back("");
 
     credits_list.push_back("--- PIXEL GRAPHICS ---");
     credits_list.push_back("IURI FIEDORUK");
-    credits_list.push_back("GIO AKIRA FAGANELLO");
+    credits_list.push_back("GIOVANI \"AKIRA\" FAGANELLO");
     credits_list.push_back("RODRIGO M. HAHN");
     credits_list.push_back("HUNTER TRAMMELL");
     credits_list.push_back("BOBERATU");
-    credits_list.push_back("PROF. CHRIS");
+    credits_list.push_back("HFBN2");
+    credits_list.push_back("CAPT. CHRIS & KB");
+    credits_list.push_back("--- OPENGAMEART.ORG ---");
+    credits_list.push_back("SURT");
+    credits_list.push_back("--- DEVIANTART.COM ---");
+    credits_list.push_back("AVERAGE-HANZO");
     credits_list.push_back("");
 
-
-    credits_list.push_back("--- DERIVATED GRAPHICS ---");
-    credits_list.push_back("CAPCOM");
+    credits_list.push_back("--- TEXT REVIEW ---");
+    credits_list.push_back("NELSON ROSENBERG");
     credits_list.push_back("");
 
 
     credits_list.push_back("--- ILLUSTRATION ---");
     credits_list.push_back("IURI FIEDORUK");
-    credits_list.push_back("ARIS KSF");
+    credits_list.push_back("ARISMEIRE KUMMER SILVA FIEDORUK");
     credits_list.push_back("");
 
     credits_list.push_back("--- MUSIC COMPOSE ---");
@@ -286,9 +332,8 @@ void draw::create_credits_text(graphicsLib_gSurface &surface)
     credits_list.push_back("ANDROID: PELYA");
     credits_list.push_back("");
 
-    credits_list.push_back("--- TESTING ---");
-    credits_list.push_back("IURI FIEDORUK");
-    credits_list.push_back("ARIS KSF");
+    credits_list.push_back("--- REVIEW & TESTING ---");
+    credits_list.push_back("ARISMEIRE KUMMER SILVA FIEDORUK");
     credits_list.push_back("LUIS AGUIRRE");
     credits_list.push_back("BENOITREN (PSP)");
     credits_list.push_back("BATANEN (PSP)");
@@ -296,27 +341,29 @@ void draw::create_credits_text(graphicsLib_gSurface &surface)
     credits_list.push_back("AGENT 13 (PS2)");
     credits_list.push_back("MK2ESCORT (PS2)");
     credits_list.push_back("FOUADTJUHMASTER (ANDROID)");
+    credits_list.push_back("SHINRYUU82");
     credits_list.push_back("");
 
     credits_list.push_back("--- SPECIAL THANKS ---");
     credits_list.push_back("FREE SDK DEVELOPERS");
-    credits_list.push_back("LIBSDL PORTERS");
-    credits_list.push_back("DEVIANTART COMMUNITY");
-    credits_list.push_back("PIXELJOIN COMMUNITY");
+    credits_list.push_back("DEVIANTART.COM COMMUNITY");
+    credits_list.push_back("PIXELJOINT.COM COMMUNITY");
+    credits_list.push_back("OPENGAMEART.ORG COMMUNITY");
     credits_list.push_back("VENOM");
     credits_list.push_back("JERONIMO");
     credits_list.push_back("");
 
     credits_list.push_back("--- DEVELOPMENT TOOLS ---");
-    credits_list.push_back("LIBSDL");
-    credits_list.push_back("LIBQT4");
+    credits_list.push_back("LIBSDL.ORG");
     credits_list.push_back("DIGIA QT");
-    credits_list.push_back("QT CREATOR");
     credits_list.push_back("UBUNTU LINUX");
+    credits_list.push_back("MINT LINUX");
     credits_list.push_back("GIMP");
     credits_list.push_back("PAINT TOOL SAI");
     credits_list.push_back("COREL DRAW");
     credits_list.push_back("SIMPLE SCREEN RECORD");
+    credits_list.push_back("AUDACIOUS PLAYER");
+    credits_list.push_back("AUDACITY EDIT");
 
     credits_list.push_back("");
     credits_list.push_back("");
@@ -351,7 +398,7 @@ void draw::create_credits_text(graphicsLib_gSurface &surface)
 }
 
 
-void draw::draw_credit_line(graphicsLib_gSurface &surface, unsigned short initial_line)
+void draw::draw_credit_line(graphicsLib_gSurface &surface, Uint8 initial_line)
 {
     if (initial_line < credits_list.size()) {
         std::size_t found = credits_list.at(initial_line).find("--- ");
@@ -368,14 +415,6 @@ void draw::draw_credit_line(graphicsLib_gSurface &surface, unsigned short initia
 
 
 
-
-
-
-
-
-
-
-
 graphicsLib_gSurface *draw::get_object_graphic(int obj_id)
 {
     std::map<unsigned int, graphicsLib_gSurface>::iterator it;
@@ -384,9 +423,13 @@ graphicsLib_gSurface *draw::get_object_graphic(int obj_id)
     it = objects_sprite_list.find(obj_id);
     if (it == objects_sprite_list.end()) { // there is no graphic with this key yet, add it
         std::string graphic_filename(game_data.objects[obj_id].graphic_filename);
-        std::string complete_filename(FILEPATH + "data/images/sprites/objects/" + graphic_filename);
-        graphLib.surfaceFromFile(complete_filename, &temp_sprite);
-        objects_sprite_list.insert(std::pair<unsigned int, graphicsLib_gSurface>(obj_id, temp_sprite));
+        if (graphic_filename.length() > 0) {
+            std::string complete_filename(FILEPATH + "data/images/sprites/objects/" + graphic_filename);
+            graphLib.surfaceFromFile(complete_filename, &temp_sprite);
+            objects_sprite_list.insert(std::pair<unsigned int, graphicsLib_gSurface>(obj_id, temp_sprite));
+        } else {
+            std::cout << "ERROR: Invalid object graphic. Object_ID: '" + obj_id << "'" << std::endl;
+        }
     } else {
         return &(*it).second;
     }

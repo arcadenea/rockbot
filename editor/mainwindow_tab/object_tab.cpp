@@ -41,6 +41,7 @@ void object_tab::on_graphicfile_combo_currentIndexChanged(const QString &arg1)
 		return;
 	}
 	sprintf(game_data.objects[_current_object].graphic_filename, "%s", arg1.toStdString().c_str());
+    std::cout << "#1 - game_data.objects[" << _current_object << "].graphic_filename: " << game_data.objects[_current_object].graphic_filename << std::endl;
     ui->object_preview_area->set_graphicfile(FILEPATH+std::string("/data/images/sprites/objects/")+arg1.toStdString());
     ui->object_preview_area->repaint();
 }
@@ -52,6 +53,7 @@ void object_tab::on_objectlist_combo_currentIndexChanged(int index)
 	}
 	_current_object = index;
 	ui->name->setText(game_data.objects[index].name);
+    std::cout << "#2 (change combo) game_data.objects[" << index << "].graphic_filename: " << game_data.objects[index].graphic_filename << std::endl;
 	ui->graphicfile_combo->setCurrentIndex(ui->graphicfile_combo->findText(QString(game_data.objects[index].graphic_filename)));
 	ui->graphic_w->setValue(game_data.objects[index].size.width);
 	ui->graphic_h->setValue(game_data.objects[index].size.height);
@@ -63,19 +65,6 @@ void object_tab::on_objectlist_combo_currentIndexChanged(int index)
 	ui->animation_loop_checkbox->setChecked(game_data.objects[_current_object].animation_loop);
 	ui->frame_duration_spinbox->setValue(game_data.objects[index].frame_duration);
 	ui->animation_reverse_checkbox->setChecked(game_data.objects[_current_object].animation_reverse);
-}
-
-void object_tab::on_add_new_pushbutton_clicked()
-{
-	for (int i=0; i<GAME_MAX_OBJS; i++) {
-		if (game_data.objects[i].id == -1) {
-			game_data.objects[i].id = i;
-			QString temp_str = QString("[") + QString::number(i) + QString("]") + QString("New Object");
-			ui->objectlist_combo->addItem(temp_str);
-			ui->objectlist_combo->setCurrentIndex(i);
-			return;
-		}
-	}
 }
 
 void object_tab::on_name_textChanged(const QString &arg1)

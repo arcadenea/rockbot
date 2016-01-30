@@ -1,14 +1,31 @@
 #ifndef DEFINES_H
 #define DEFINES_H
 
+#define FRAMES_PER_SECOND 35
 
 #define RES_W 320
 #define RES_H 240
 
 #define UNUSED(x) (void)x
 
-#define PLAYER_ROCKBOT 1
-#define PLAYER_BETABOT 2
+enum e_PLAYERS {
+    PLAYER_ROCKBOT,
+    PLAYER_BETABOT,
+    PLAYER_CANDYBOT,
+    PLAYER_KITTYBOT
+};
+
+#define WALK_FRAME_DELAY 100
+
+// ==================== PHYSICS ==================== //
+
+
+
+
+
+
+
+
 
 // stages
 /// @TODO: will be recplaced by file_game
@@ -25,7 +42,7 @@ enum STAGE_LIST {
  * @brief
  *
  */
-enum COLISION_TYPES { BLOCK_UNBLOCKED, BLOCK_X, BLOCK_Y, BLOCK_XY, BLOCK_STAIR_X, BLOCK_STAIR_Y, BLOCK_WATER };
+enum COLISION_TYPES { BLOCK_UNBLOCKED, BLOCK_X, BLOCK_Y, BLOCK_XY, BLOCK_STAIR_X, BLOCK_STAIR_Y, BLOCK_WATER, BLOCK_MOVE_LEFT, BLOCK_MOVE_RIGHT };
 
 /**
  * @brief
@@ -83,6 +100,10 @@ enum ANIM_DIRECTION {
     ANIM_DIRECTION_DOWN_LEFT,
     ANIM_DIRECTION_DOWN_RIGHT,
     ANIM_DIRECTION_COUNT };
+
+
+#define CHAR_ANIM_DIRECTION_COUNT 2 // characters use only left/right, not like projectiles
+
 /**
  * @brief
  *
@@ -99,7 +120,7 @@ enum ANIM_TYPE { ANIM_TYPE_STAND,
 				 ANIM_TYPE_STAIRS_SEMI,
 				 ANIM_TYPE_STAIRS_ATTACK,
 				 ANIM_TYPE_STAIRS_MOVE,
-				 ANIM_TYPE_TROW,
+                 ANIM_TYPE_THROW,
 				 ANIM_TYPE_TURN,
 				 ANIM_TYPE_MOVE_SEMI, // like turn, the start of the movement
 				 ANIM_TYPE_WALK_AIR, // for those that can walk on air
@@ -107,8 +128,20 @@ enum ANIM_TYPE { ANIM_TYPE_STAND,
                  ANIM_TYPE_SPECIAL_ATTACK, // for bosses, charging weapon, etc
                  ANIM_TYPE_SLIDE,
 				 ANIM_TYPE_SHIELD,
-				 ANIM_TYPE_VERTICAL_TURN,
-				 ANIM_TYPE_COUNT };
+                 ANIM_TYPE_VERTICAL_TURN,
+                 ANIM_TYPE_ATTACK_THROW,
+                 ANIM_TYPE_ATTACK_DIAGONAL_UP,
+                 ANIM_TYPE_ATTACK_DIAGONAL_DOWN,
+                 ANIM_TYPE_ATTACK_UP,
+                 ANIM_TYPE_ATTACK_DOWN,
+                 ANIM_TYPE_ATTACK_SPECIAL, // (hadouken, shouryuken, etc)
+                 ANIM_TYPE_LOOK_UP,
+                 ANIM_TYPE_GRAB_WALL,
+                 ANIM_TYPE_COUNT };
+
+// alguns como attack_trhow e throw; e special attack e attack_special estão repetidos. fica de reserva futura
+
+
 #define ANIM_FRAMES_COUNT 10 // max number of animation frames for each animation_type
 
 #define MAP_W 200 // this size was determined by looking at common maps from games
@@ -187,6 +220,9 @@ enum SFX_LIST {
 	SFX_WATER_ENTER,
 	SFX_WATER_LEAVE,
     SFX_DISAPPEARING_BLOCK,
+    SFX_HADOUKEN_GIRL,
+    SFX_SHORYUKEN_GIRL,
+    SFX_BEAM,
 	SFX_COUNT // not used as sfx, this is a way to measure size of the enum list
 };
 
@@ -194,7 +230,7 @@ enum SFX_LIST {
  * @brief
  *
  */
-enum TERREAIN_TYPES {
+enum TERRAIN_TYPES {
 	TERRAIN_UNBLOCKED,
 	TERRAIN_SOLID,
 	TERRAIN_STAIR,
@@ -276,6 +312,18 @@ enum OBJECT_TYPE {
 	OBJ_ITEM_FLY,
 	OBJ_ITEM_JUMP,
     OBJ_ACTIVE_DISAPPEARING_BLOCK, // disappear only after player activates it
+    OBJ_ARMOR_ARMS,
+    OBJ_ARMOR_BODY,
+    OBJ_ARMOR_LEGS,
+    OBJ_RAY_HORIZONTAL,
+    OBJ_RAY_VERTICAL,
+    OBJ_TRACK_PLATFORM,
+    OBJ_BOSS_TELEPORTER,
+    OBJ_DESTRUCTIBLE_WALL,
+    OBJ_SPECIAL_TANK,
+    OBJ_DEATHRAY_VERTICAL,
+    OBJ_DEATHRAY_HORIZONTAL,
+    OBJ_FINAL_BOSS_TELEPORTER,
 	OBJ_TYPE_COUNT
 };
 
@@ -324,12 +372,13 @@ enum PROJECTILE_TRAJECTORIES {
 	TRAJECTORY_FREEZE,
 	TRAJECTORY_DIAGONAL_UP,
 	TRAJECTORY_DIAGONAL_DOWN,
-	TRAJECTORY_CENTERED, // centered around character
-	TRAJECTORY_ZIGZAG, // linear until reach a wall, then return (repeat until reflection number = 3)
-    TRAJECTORY_TARGET_DIRECTION, // adjust to linear, diagonal up or diagonal down depending on player position when shoot
-    TRAJECTORY_ARC_TO_TARGET, // forms an arn that will end at player's position
-    TRAJECTORY_TARGET_EXACT, // will go exactly to the point the target is in
-    TRAJECTORY_FALL_BOMB, // falls until ground then explodes
+    TRAJECTORY_CENTERED,                // centered around character
+    TRAJECTORY_ZIGZAG,                  // linear until reach a wall, then return (repeat until reflection number = 3)
+    TRAJECTORY_TARGET_DIRECTION,        // adjust to linear, diagonal up or diagonal down depending on player position when shoot
+    TRAJECTORY_ARC_TO_TARGET,           // forms an arn that will end at player's position
+    TRAJECTORY_TARGET_EXACT,            // will go exactly to the point the target is in
+    TRAJECTORY_FALL_BOMB,               // falls until ground then explodes
+    TRAJECTORY_LASER,
 	PROJECTILE_TRAJECTORIES_COUNT };
 
 
@@ -348,7 +397,9 @@ enum EDITOR_MODES {
 	EDITMODE_ADDNPC,
 	EDITMODE_STAIRS,
     EDITMODE_OBJECT,
-    EDITMODE_SET_BOSS
+    EDITMODE_SET_BOSS,
+    EDITMODE_SET_SUBBOSS,
+    EDITMODE_OBJECT_LINK_PLACING
 };
 
 /**
@@ -444,85 +495,25 @@ enum e_energy_types { ENERGY_TYPE_HP, ENERGY_TYPE_WEAPON };
 
 #ifdef PLAYSTATION2
     #define JOYVAL 12000
-#elif DREAMCAST
-    #define JOYVAL 100
 #else
 	#define JOYVAL 30000
 #endif
 
-#ifdef PLAYSTATION2
-	#define JOY_TRIANGLE 3
-	#define JOY_CIRCLE 2
-	#define JOY_X 1
-	#define JOY_SQUARE 0
-    #define JOY_L2 8
-	#define JOY_R2 9
-	#define JOY_L1 6
-    #define JOY_R1 7
-	#define JOY_SELECT 4
-	#define JOY_START 5
-	#define JOY_L3 10
-	#define JOY_R3 11
-#elif PSP
-    #define JOY_TRIANGLE 3
-    #define JOY_CIRCLE 0
-    #define JOY_X 1
-    #define JOY_SQUARE 2
-
-
-    #define JOY_L2 30
-    #define JOY_R2 31
-    #define JOY_L1 4
-    #define JOY_R1 5
-    #define JOY_SELECT 10
-    #define JOY_START 11
-    #define JOY_L3 40
-    #define JOY_R3 41
-    #define JOY_LEFT 7
-    #define JOY_RIGHT 9
-    #define JOY_UP 8
-    #define JOY_DOWN 6
-#elif WII
-    #define JOY_CIRCLE 0
-    #define JOY_X 1
-    #define JOY_TRIANGLE 2
-    #define JOY_SQUARE 3
-    #define JOY_L2 8
-    #define JOY_R2 9
-    #define JOY_L1 4
-    #define JOY_R1 5
-    #define JOY_SELECT 7
-    #define JOY_START 6
-    #define JOY_L3 10
-    #define JOY_R3 11
-#else
-	#define JOY_TRIANGLE 0
-	#define JOY_CIRCLE 1
-	#define JOY_X 2
-	#define JOY_SQUARE 3
-	#define JOY_L2 4
-	#define JOY_R2 5
-	#define JOY_L1 6
-	#define JOY_R1 7
-	#define JOY_SELECT 8
-	#define JOY_START 9
-	#define JOY_L3 10
-	#define JOY_R3 11
-#endif
-
+// ATUAL: []: tiro, X: pulo, O: dash =>
+// DESEJADO: X: ataque, O: pulo, /\: dash
 
 #define ENERGY_ITEM_SMALL 3
 #define ENERGY_ITEM_BIG 8
 
 #define MOVING_GROUND 10 //TREADMILL
 
-#define CURRENT_FILE_FORMAT format_v_2_1_2
 
 #define CHARGED_SHOT_INITIAL_TIME 1000
 #define CHARGED_SHOT_TIME 2200
+#define SUPER_CHARGED_SHOT_TIME 3200
 
-#define TOUCH_DAMAGE_SMALL 4
-#define TOUCH_DAMAGE_BIG 6
+#define TOUCH_DAMAGE_SMALL 2
+#define TOUCH_DAMAGE_BIG 4
 
 // from graphiLib
 #define WPN_COLUMN1_X 42
@@ -547,6 +538,10 @@ enum e_game_flags {
 	FLAG_INFINITE_JUMP,
 	FLAG_ALLWEAPONS,
     FLAG_INFINITE_HP,
+    FLAG_PLAYER_ROCKBOT,
+    FLAG_PLAYER_BETABOT,
+    FLAG_PLAYER_CANDYBOT,
+    FLAG_PLAYER_KITTYBOT,
 	FLAG_COUNT
 };
 
@@ -730,7 +725,7 @@ enum colision_modes {
 
 #define MENU_CHANGE_DELAY 100
 
-#define QUAKE_SCREEN_MOVE 3
+#define QUAKE_SCREEN_MOVE 2
 
 enum FREEZE_EFFECT_TYPES {
     FREEZE_EFFECT_NONE,
@@ -755,8 +750,90 @@ enum e_VIDEO_FILTERS {
     VIDEO_FILTER_SCALE2x
 };
 
-#define BOSS_HIT_DURATION 600
+#define BOSS_HIT_DURATION 800
 
+#define COLORKEY_R 75
+#define COLORKEY_G 125
+#define COLORKEY_B 125
+
+
+#define COLOR_COUNT 68
+
+// filesystem defines
+#define FS_GAME_MAX_OBJS 40
+#define FS_GAME_MAX_NPCS 100
+#define FS_MAX_PROJECTILES 30
+#define FS_MAX_WEAPONS 20
+#define FS_MAX_PLAYERS 4
+#define FS_MAX_AI_TYPES 50
+#define FS_MAX_STAGES 20
+
+#define FS_CHAR_NAME_SIZE 30
+#define FS_CHAR_FILENAME_SIZE 30
+#define FS_INI_KEY_SIZE 30
+
+#define FS_FILENAME_SIZE 30
+#define FS_NAME_SIZE 30
+
+#define FS_STAGE_MAX_LINKS 30
+#define FS_STAGE_MAX_MAPS 3
+
+#define FS_MAX_MAP_NPCS 30
+#define FS_MAX_MAP_OBJECTS 30
+
+#define FS_COLORCYCLE_MAX_ITEMS 10
+
+#define FS_NPC_WEAKNESSES 9
+
+#define FS_DIALOG_LINES 3
+
+#define TROPHIES_MAX 10
+#define CASTLE_STAGES_MAX 4
+
+#define FS_COLOR_KEYS_N 3
+#define FS_NPC_PROJECTILE_N 2
+
+
+enum e_ARMOR_PIECES {
+    ARMOR_ARMS, ARMOR_BODY, ARMOR_LEGS, FS_PLAYER_ARMOR_PIECES_MAX
+};
+
+/*
+void armor_edit::fill_armor_abilities() {
+    std::string arm_abilities[] = {"Super-Shot", "Laser-Beam", "Always-Charged", "Freeze"};
+    std::string legs_abilities[] = {"Double Jump", "Air-Dash", "Wall-Grab"};
+    std::string body_abilities[] = {"Half-Damage", "Extended Immunity", "Spikes Immune", "No Push-Back"};
+ */
+
+enum e_ARMOR_ABILITIES_ARMS {
+    ARMOR_ABILITY_ARMS_SUPERSHOT, ARMOR_ABILITY_ARMS_LASERBEAM, ARMOR_ABILITY_ARMS_ALWAYSCHARGED, ARMOR_ABILITY_ARMS_MISSILE
+};
+enum e_ARMOR_ABILITIES_LEGS {
+    ARMOR_ABILITY_LEGS_DOUBLEJUMP, ARMOR_ABILITY_LEGS_AIRDASH, ARMOR_ABILITY_LEGS_SHORYUKEN
+};
+enum e_ARMOR_ABILITIES_BODY {
+    ARMOR_ABILITY_BODY_HALFDAMAGE, ARMOR_ABILITY_BODY_EXTENDEDIMMUNITY, ARMOR_ABILITY_BODY_SPIKESIMMMUNE, ARMOR_ABILITY_BODY_NOPUSHBACK
+};
+
+#define FS_ANIM_TILES_MAX 20
+
+#define FS_FACE_FILENAME_MAX 20
+#define FS_PLATER_ITEMS_N 2
+
+#define SPIKES_DAMAGE 999
+
+#define CURRENT_FILE_FORMAT format_v_3_0_1
+
+#define EDITMODE_NORMAL 0
+#define EDITMODE_LOCK 1
+#define EDITMODE_ERASER 2
+#define EDITMODE_FILL 3
+#define EDITMODE_LINK 4
+#define EDITMODE_LINK_DEST 5
+#define EDITMODE_NPC 6
+#define EDITMODE_ADDNPC 7
+#define EDITMODE_STAIRS 8
+#define EDITMODE_OBJECT 9
 
 
 
